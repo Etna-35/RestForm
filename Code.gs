@@ -224,11 +224,13 @@ function saveReport(data) {
       Number(dateParts[1]) - 1,
       Number(dateParts[2])
     );
-    if (isLockedPastDateServer(shiftDate)) {
+    const ownerOverride = String(data.ownerOverride) === 'true' || data.ownerOverride === true;
+    const ownerPinInput = String(data.ownerPin || '');
+    if (isLockedPastDateServer(shiftDate) && (!ownerOverride || ownerPinInput !== String(params.ownerPin || '1461'))) {
       return {
         status: 'error',
         code: 'OLD_DATE_LOCKED',
-        message: 'Правки старше двух дней доступны только через руководителя'
+        message: 'Старая дата доступна только по PIN руководителя'
       };
     }
 
