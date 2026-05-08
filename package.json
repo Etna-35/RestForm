@@ -1,0 +1,13 @@
+{
+  "name": "etna-restform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ETNA shift closing web form",
+  "scripts": {
+    "serve": "python3 -m http.server 8000",
+    "check": "npm run check:syntax && npm run check:apps-script && npm run audit:handlers",
+    "check:syntax": "node scripts/check-inline-js.mjs",
+    "check:apps-script": "node --check --input-type=commonjs < Code.gs",
+    "audit:handlers": "node scripts/audit-inline-handlers.mjs"
+  }
+}

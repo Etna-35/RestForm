@@ -1,0 +1,27 @@
+.DS_Store
+Thumbs.db
+
+# Local runtime and package folders
+node_modules/
+.npm/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.local
+secrets/
+
+# Temporary checks and exports
+tmp/
+temp/
+*.tmp
+extracted.js
+restform_extracted.js
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+

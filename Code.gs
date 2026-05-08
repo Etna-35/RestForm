@@ -70,7 +70,15 @@ function doGet(e) {
       if (action === 'getSettings') {
         const plans  = getPlansFromSettings(ss);
         const params = getParams(ss);
-        return jsonResponse({ plans, ...params });
+        return jsonResponse({
+          plans,
+          hookahRate: params.hookahRate,
+          cashDiffLimit: params.cashDiffLimit,
+          lateHour: params.lateHour,
+          ownerPin: params.ownerPin,
+          maxTaxi: params.maxTaxi,
+          telegramConfigured: Boolean(params.botToken && (params.chatOwner || params.chatGeneral))
+        });
       }
 
       // ── getInitData — основной запрос формы при загрузке ──
@@ -187,9 +195,7 @@ function getInitData(dateStr) {
     cashDiffLimit: params.cashDiffLimit,
     maxTaxi:       params.maxTaxi,
     ownerPin:      params.ownerPin,
-    botToken:      params.botToken,
-    chatOwner:     params.chatOwner,
-    chatGeneral:   params.chatGeneral,
+    telegramConfigured: Boolean(params.botToken && (params.chatOwner || params.chatGeneral)),
     dayCode:       dayCode
   };
 }
@@ -365,11 +371,194 @@ function saveReport(data) {
     }
 
     const taxiAnomaly = maxTaxi > 0 && taxiCost > maxTaxi;
-    return { status: 'success', row: targetRow, cashCalc, isUpdate: targetRow <= lastRow, taxiAnomaly };
+    const telegram = sendTelegramReport(data, {
+      params,
+      shiftDate,
+      dayCode,
+      planRevenue: plan.revenue,
+      planCash: plan.cash,
+      terminal1,
+      terminal2,
+      netmonet,
+      cardRev,
+      cashRev,
+      transRev,
+      totalRev,
+      taxiCost,
+      washCost,
+      hookahs,
+      hookahPay,
+      extrasTotal,
+      collection,
+      cashActual,
+      cashCalc,
+      cashDiff,
+      pct,
+      taxiAnomaly
+    });
+
+    return { status: 'success', row: targetRow, cashCalc, isUpdate: targetRow <= lastRow, taxiAnomaly, telegram };
 
   } catch (err) {
     return { status: 'error', message: err.toString(), stack: err.stack };
   }
+}
+
+function sendTelegramReport(data, ctx) {
+  const token = ctx.params.botToken;
+  const chatOwner = ctx.params.chatOwner;
+  const chatGeneral = ctx.params.chatGeneral;
+  if (!token) return { status: 'skipped', reason: 'botToken is empty' };
+
+  const result = { status: 'success', sent: [], errors: [] };
+  const dateStr = Utilities.formatDate(ctx.shiftDate, 'GMT+3', 'dd.MM.yyyy') + ' (' + String(ctx.dayCode).toLowerCase() + ')';
+  const pctRev = ctx.planRevenue > 0 ? Math.round(ctx.totalRev / ctx.planRevenue * 100) : 0;
+  const pctCash = ctx.planCash > 0 ? Math.round((ctx.cashRev + ctx.transRev) / ctx.planCash * 100) : 0;
+  const icon = pctRev >= 100 ? '🟢' : pctRev >= 80 ? '🟡' : '🔴';
+  const employee = escapeTelegramText(data.employee || '');
+  const photos = Array.isArray(data.photos) ? data.photos : [];
+
+  const extraLines = parseExtras(data.extras)
+    .map(ex => '  • ' + rub(ex.amount) + (ex.comment ? ' — ' + escapeTelegramText(ex.comment) : ''))
+    .join('\n');
+
+  const cashDiffLine = ctx.cashDiff === 0
+    ? '✅ Касса сходится'
+    : ctx.cashDiff > 0
+      ? '⚠️ Излишек: ' + rub(ctx.cashDiff)
+      : '❌ Недостача: ' + rub(Math.abs(ctx.cashDiff));
+
+  const shortMsg = icon + ' *ЭТНА | Итоги смены* | ' + dateStr + '\n' +
+    employee + '\n\n' +
+    '━━━ ПЛАН ПО ВЫРУЧКЕ ━━━\n' +
+    planBar(pctRev) + ' ' + pctRev + '%\n' +
+    'Факт: *' + rub(ctx.totalRev) + '*\n' +
+    'План: ' + rub(ctx.planRevenue) + '\n' +
+    planStatus(pctRev) + '\n\n' +
+    '━━━ ПЛАН ПО НАЛИЧНЫМ ━━━\n' +
+    planBar(pctCash) + ' ' + pctCash + '%\n' +
+    'Факт: *' + rub(ctx.cashRev + ctx.transRev) + '*\n' +
+    'План: ' + rub(ctx.planCash) + '\n' +
+    planStatus(pctCash);
+
+  const fullMsg = '*ЭТНА  |  ' + dateStr + '*\n' +
+    employee + '\n\n' +
+    '━━━ ДОХОДЫ ━━━\n' +
+    'Безнал (итого): ' + rub(ctx.cardRev) + '\n' +
+    'Наличные: ' + rub(ctx.cashRev) + '\n' +
+    'Переводы: ' + rub(ctx.transRev) + '\n\n' +
+    '*Итого выручка: ' + rub(ctx.totalRev) + '*\n\n' +
+    '━━━ РАСХОДЫ (прошлой смены) ━━━\n' +
+    'Такси (прош. смена): ' + rub(ctx.taxiCost) + (ctx.taxiAnomaly ? ' ⚠️ ПРЕВЫШЕН ЛИМИТ' : '') + '\n' +
+    'Мойка: ' + rub(ctx.washCost) + '\n' +
+    'Кальянов: ' + ctx.hookahs + ' × ' + ctx.params.hookahRate + '₽ = ' + rub(ctx.hookahPay) +
+    (extraLines ? '\nДоп. расходы:\n' + extraLines : '') + '\n\n' +
+    '*Итого расходов: ' + rub(Number(data.totalExp) || (ctx.taxiCost + ctx.washCost + ctx.hookahPay + ctx.extrasTotal)) + '*\n\n' +
+    '━━━ КАССА ━━━\n' +
+    'Инкассация: ' + rub(ctx.collection) + '\n' +
+    'Факт: ' + rub(ctx.cashActual) + '\n' +
+    'Расчёт: ' + rub(ctx.cashCalc) + '\n' +
+    cashDiffLine + '\n\n' +
+    '━━━ ПЛАН ━━━\n' +
+    icon + ' Выручка: ' + rub(ctx.totalRev) + ' / ' + rub(ctx.planRevenue) + ' (' + pctRev + '%)\n' +
+    (pctCash >= 100 ? '✅' : '❌') + ' Наличные: ' + rub(ctx.cashRev + ctx.transRev) + ' / ' + rub(ctx.planCash);
+
+  if (chatGeneral) {
+    const sent = telegramText(token, chatGeneral, shortMsg);
+    sent.ok ? result.sent.push('general') : result.errors.push(sent.error);
+  }
+  if (chatOwner) {
+    const sent = telegramText(token, chatOwner, fullMsg);
+    sent.ok ? result.sent.push('owner') : result.errors.push(sent.error);
+    if (photos.length) {
+      const media = telegramPhotos(token, chatOwner, photos, '📄 Чеки терминала | ' + dateStr);
+      media.ok ? result.sent.push('photos') : result.errors.push(media.error);
+    }
+  }
+
+  if (result.errors.length) result.status = 'partial';
+  return result;
+}
+
+function telegramText(token, chatId, text) {
+  try {
+    const response = UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify({ chat_id: chatId, text: text, parse_mode: 'Markdown' }),
+      muteHttpExceptions: true
+    });
+    const body = JSON.parse(response.getContentText() || '{}');
+    return body.ok ? { ok: true } : { ok: false, error: body.description || response.getContentText() };
+  } catch (err) {
+    return { ok: false, error: err.toString() };
+  }
+}
+
+function telegramPhotos(token, chatId, photos, caption) {
+  try {
+    const chunks = [];
+    for (let i = 0; i < photos.length; i += 10) chunks.push(photos.slice(i, i + 10));
+    chunks.forEach((chunk, chunkIndex) => {
+      const payload = { chat_id: String(chatId) };
+      const media = [];
+      chunk.forEach((photo, index) => {
+        const key = 'photo' + index;
+        payload[key] = dataUrlToBlob(photo);
+        const item = { type: 'photo', media: 'attach://' + key };
+        if (chunkIndex === 0 && index === 0 && caption) item.caption = caption;
+        media.push(item);
+      });
+      payload.media = JSON.stringify(media);
+      const response = UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/sendMediaGroup', {
+        method: 'post',
+        payload: payload,
+        muteHttpExceptions: true
+      });
+      const body = JSON.parse(response.getContentText() || '{}');
+      if (!body.ok) throw new Error(body.description || response.getContentText());
+    });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.toString() };
+  }
+}
+
+function dataUrlToBlob(photo) {
+  const dataUrl = String(photo.dataUrl || '');
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) throw new Error('Некорректный формат фото');
+  const bytes = Utilities.base64Decode(match[2]);
+  return Utilities.newBlob(bytes, photo.type || match[1] || 'image/jpeg', photo.name || 'photo.jpg');
+}
+
+function parseExtras(raw) {
+  try {
+    const items = JSON.parse(raw || '[]');
+    return Array.isArray(items) ? items : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function rub(value) {
+  return (Number(value) || 0).toLocaleString('ru-RU') + ' ₽';
+}
+
+function planBar(pct) {
+  const width = 10;
+  const filled = Math.round(Math.min(Math.max(Number(pct) || 0, 0), 100) / 100 * width);
+  return '█'.repeat(filled) + '░'.repeat(width - filled);
+}
+
+function planStatus(pct) {
+  if (pct >= 100) return '✅ Выполнен';
+  if (pct >= 80) return '🟡 Близко';
+  return '🔴 Не выполнен';
+}
+
+function escapeTelegramText(value) {
+  return String(value || '').replace(/([_*`\[])/g, '\\$1');
 }
 
 // ═══════════════════════════════════════════════════
