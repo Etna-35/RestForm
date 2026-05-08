@@ -12,7 +12,7 @@
 ═══════════════════════════════════════════════════════════════
 -->
 <script>
-window.APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9w-Xlnm3SE4hSQP9Dm3C1R5GMc7ctB3yXX25VQrProf5IUUJjTnO7EIWwk2lugK6n4Q/exec";
+window.APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjcDdr71R5LX2pCoUjpggUyRVKFTG5i7yogmiMFaigogV2BHfrEbTrJbRBHxLQJD8Kow/exec";
 </script>
 
 <style>
@@ -39,10 +39,10 @@ window.APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9w-Xlnm3SE4h
   --rs: 8px;
 }
 
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}button{font-family:inherit;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}button{font-family:inherit;}
 html,body{height:100%;}
-html{touch-action:manipulation;-webkit-text-size-adjust:100%;}
 body{background:var(--bg);color:var(--text);font-family:'Golos Text',sans-serif;font-size:15px;min-height:100vh;overflow-x:hidden;touch-action:manipulation;}
+button,a,.date-wrap{touch-action:manipulation;}
 
 .screen{display:none;min-height:100vh;}.screen.show{min-height:100vh;}
 .screen.show{display:flex;flex-direction:column;}
@@ -72,9 +72,6 @@ body{background:var(--bg);color:var(--text);font-family:'Golos Text',sans-serif;
 .fh-date{display:flex;gap:6px;align-items:center;flex-shrink:0;}
 .date-chip{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 11px;font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s;font-family:'Unbounded',sans-serif;letter-spacing:.02em;}
 .date-chip.active{background:var(--gold);color:#0e0e0e;border-color:var(--gold);}
-.date-wrap{position:relative;display:flex;align-items:center;}
-.date-native{position:absolute;inset:0;width:100%;height:100%;opacity:.001;border:0;background:transparent;color:transparent;cursor:pointer;font-size:16px;}
-.date-native::-webkit-calendar-picker-indicator{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;}
 
 .fb{padding:16px;padding-bottom:100px;}
 
@@ -176,8 +173,6 @@ body{background:var(--bg);color:var(--text);font-family:'Golos Text',sans-serif;
 textarea.field-input{resize:none;min-height:80px;}
 .modal-btn{width:100%;background:var(--gold);color:#0e0e0e;font-family:'Unbounded',sans-serif;font-size:13px;font-weight:700;border:none;border-radius:var(--rs);padding:16px;cursor:pointer;}
 .modal-btn:active{background:var(--gold-light);}
-.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px;}
-.modal-btn.secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
 
 /* ══ CFG ══ */
 #cfgModal .modal{max-height:90vh;}
@@ -190,6 +185,28 @@ textarea.field-input{resize:none;min-height:80px;}
 .add-emp:active{border-color:var(--gold);color:var(--gold);}
 .plan-grid{display:grid;grid-template-columns:auto 1fr 1fr;gap:8px;align-items:center;margin-bottom:6px;}
 .plan-day{font-size:12px;color:var(--muted);padding:10px 6px;}
+.date-wrap{position:relative;cursor:pointer;}
+.date-wrap .date-hit{
+  position:absolute;inset:0;opacity:0;cursor:pointer;
+  -webkit-appearance:none;appearance:none;
+}
+.date-lock-overlay{
+  position:fixed;inset:0;z-index:12000;background:rgba(0,0,0,.94);
+  display:none;align-items:center;justify-content:center;padding:24px;
+}
+.date-lock-overlay.show{display:flex;}
+.date-lock-card{
+  width:100%;max-width:460px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:24px 18px;text-align:center;
+}
+.date-lock-title{font-family:'Unbounded',sans-serif;color:var(--gold);font-size:14px;margin-bottom:10px;}
+.date-lock-text{color:var(--muted);font-size:14px;line-height:1.5;margin-bottom:16px;}
+.date-lock-actions{display:grid;gap:10px;}
+.date-lock-btn{
+  border:1px solid var(--border);background:var(--surface2);color:var(--text);
+  border-radius:var(--rs);padding:14px;font-size:14px;cursor:pointer;
+}
+.date-lock-btn.primary{background:var(--gold);border-color:var(--gold);color:#0e0e0e;font-family:'Unbounded',sans-serif;font-weight:700;}
 
 /* ══ SUCCESS ══ */
 #successScreen{align-items:center;justify-content:center;padding:40px 24px;text-align:center;}
@@ -200,12 +217,6 @@ textarea.field-input{resize:none;min-height:80px;}
 /* ══ SENDING ══ */
 #sendingOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
 #sendingOverlay.show{display:flex;}
-.blocked-screen{display:none;position:fixed;inset:0;background:var(--bg);z-index:10000;align-items:center;justify-content:center;padding:28px;}
-.blocked-screen.show{display:flex;}
-.blocked-box{width:100%;max-width:360px;text-align:center;}
-.blocked-title{font-family:'Unbounded',sans-serif;font-size:18px;font-weight:700;color:var(--gold);line-height:1.35;margin-bottom:14px;}
-.blocked-text{font-size:14px;color:var(--muted);line-height:1.55;margin-bottom:22px;}
-.blocked-actions{display:flex;flex-direction:column;gap:10px;}
 .spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .send-txt{font-family:'Unbounded',sans-serif;font-size:12px;color:var(--muted);letter-spacing:.08em;}
@@ -284,11 +295,11 @@ textarea.field-input{resize:none;min-height:80px;}
 
     <!-- ТАКСИ ПРОШЛОЙ СМЕНЫ — отдельный блок после открытия кассы -->
     <div class="bl">
-      <div class="bl-title">Расходы прошлой смены</div>
-      <div class="bl-hint">Введите фактическую сумму такси за прошлую смену по данным агрегатора</div>
+      <div class="bl-title" id="taxiTitle">РАСХОДЫ НА ТАКСИ за <span id="taxiDateLabel"></span></div>
+      <div class="bl-hint">Вводите данные только, если оплата была картой</div>
       <div class="card">
         <div class="crow">
-          <div class="crow-label">Такси прошлой смены — <span id="prevShiftDateLabel" style="color:var(--gold)"></span><span class="note">Введите фактическую сумму по данным агрегатора</span></div>
+          <div class="crow-label">Такси прошлой смены<span class="note">Если оплата такси была наличными, значение - 0</span></div>
           <input class="crow-input" id="taxiCost" type="number" inputmode="numeric" placeholder="0" oninput="markTouched(this);calc()" data-required="true">
         </div>
         <div class="alert-row" id="taxiAlert" style="display:none"></div>
@@ -466,18 +477,6 @@ textarea.field-input{resize:none;min-height:80px;}
   </div>
 </div>
 
-<!-- ═══ OLD DATE BLOCKER ═══ -->
-<div class="blocked-screen" id="oldDateBlocker">
-  <div class="blocked-box">
-    <div class="blocked-title">Давняя смена доступна только через руководителя</div>
-    <div class="blocked-text" id="oldDateBlockerText">Для правок старше двух дней свяжитесь с руководителем. Вам помогут внести данные корректно.</div>
-    <div class="blocked-actions">
-      <button class="modal-btn" onclick="contactOwner()">Написать руководителю</button>
-      <button class="modal-btn secondary" onclick="location.reload()">Обновить страницу</button>
-    </div>
-  </div>
-</div>
-
 <!-- ═══ MODAL: extra ═══ -->
 <div class="overlay" id="extraOverlay">
   <div class="modal">
@@ -492,19 +491,6 @@ textarea.field-input{resize:none;min-height:80px;}
       <textarea class="field-input" id="extraCmt" placeholder="Что именно и почему..."></textarea>
     </div>
     <button class="modal-btn" onclick="saveExtra()">Добавить</button>
-  </div>
-</div>
-
-<!-- ═══ MODAL: date confirm ═══ -->
-<div class="overlay" id="dateConfirmModal">
-  <div class="modal">
-    <div class="modal-title">Подтвердите дату</div>
-    <div style="font-size:14px;color:var(--text);line-height:1.55;margin-bottom:8px" id="dateConfirmText"></div>
-    <div style="font-size:12px;color:var(--muted);line-height:1.45">Отчёт будет записан именно на выбранную дату. Это удобно для внесения данных с бумажного носителя.</div>
-    <div class="modal-actions">
-      <button class="modal-btn secondary" onclick="cancelManualDate()">Отмена</button>
-      <button class="modal-btn" onclick="confirmManualDate()">Подтвердить</button>
-    </div>
   </div>
 </div>
 
@@ -534,6 +520,27 @@ textarea.field-input{resize:none;min-height:80px;}
   </div>
 </div>
 
+<div class="date-lock-overlay" id="oldDateOverlay">
+  <div class="date-lock-card">
+    <div class="date-lock-title">Доступ к старой дате ограничен</div>
+    <div class="date-lock-text">Данные старше 2 дней может вносить только руководитель. Обновите страницу или подтвердите PIN руководителя.</div>
+    <div class="date-lock-actions">
+      <button class="date-lock-btn primary" onclick="authorizeOwnerRetro()">Ввести PIN руководителя</button>
+      <button class="date-lock-btn" onclick="location.reload()">Обновить страницу</button>
+      <button class="date-lock-btn" onclick="closeOldDateOverlay()">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="retroEmployeeModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeRetroEmployeeModal()">×</button>
+    <div class="modal-title">Смена за прошлую дату</div>
+    <div class="field-hint" style="margin-bottom:12px">Выберите сотрудника, чья смена была в выбранный день.</div>
+    <div id="retroEmployeeList"></div>
+  </div>
+</div>
+
 <!-- ═══ MODAL: cfg ═══ -->
 <div class="overlay" id="cfgModal">
   <div class="modal">
@@ -542,15 +549,15 @@ textarea.field-input{resize:none;min-height:80px;}
 
     <div class="cfg-sec">Telegram</div>
     <div class="field">
-      <div class="field-label">Bot Token <span style="color:var(--dim);font-weight:400">(оставьте пустым, чтобы не менять)</span></div>
+      <div class="field-label">Bot Token</div>
       <input class="field-input" id="cfgToken" placeholder="123456:AAF...">
     </div>
     <div class="field">
-      <div class="field-label">Chat ID — закрытый <span style="color:var(--dim);font-weight:400">(оставьте пустым, чтобы не менять)</span></div>
+      <div class="field-label">Chat ID — закрытый (руководитель + фото)</div>
       <input class="field-input" id="cfgOwner" placeholder="-100...">
     </div>
     <div class="field">
-      <div class="field-label">Chat ID — общий <span style="color:var(--dim);font-weight:400">(оставьте пустым, чтобы не менять)</span></div>
+      <div class="field-label">Chat ID — общий (краткая сводка команде)</div>
       <input class="field-input" id="cfgGeneral" placeholder="-100...">
     </div>
 
@@ -578,7 +585,7 @@ textarea.field-input{resize:none;min-height:80px;}
     <div class="cfg-sec">PIN владельца (для доступа к настройкам)</div>
     <div class="field">
       <div class="field-label">PIN-код (4 цифры)</div>
-      <input class="field-input" id="cfgOwnerPin" type="password" maxlength="4" inputmode="numeric" placeholder="1461" style="letter-spacing:.2em;text-align:center;font-size:20px">
+      <input class="field-input" id="cfgOwnerPin" type="password" maxlength="4" inputmode="numeric" placeholder="0000" style="letter-spacing:.2em;text-align:center;font-size:20px">
       <div class="field-hint" style="margin-top:6px">Также хранится в ячейке D16 листа «Настройки» в Google Sheets</div>
     </div>
 
@@ -610,11 +617,8 @@ const num=id=>parseFloat(g(id).value)||0;
 const fmt=n=>n.toLocaleString('ru-RU')+' ₽';
 const getEmps=()=>{try{return JSON.parse(localStorage.getItem('e_emps')||'[]');}catch{return[];}};
 const setEmps=a=>localStorage.setItem('e_emps',JSON.stringify(a));
-['bot-token','chat-owner','chat-general'].forEach(k=>localStorage.removeItem('e_'+k));
-const DEFAULT_EMPS=[{name:'Даня',pin:'3113'},{name:'Элина',pin:'7407'}];
-const SETTINGS_REFRESH_MS=6*60*60*1000;
 
-const NOW=getMoscowNow();
+const NOW=new Date();
 const h=NOW.getHours();
 // Показываем выбор "вчера" с 22:00 до 06:00
 // дата выбирается вручную через иконку
@@ -625,11 +629,13 @@ let extras=[];
 let photosReceipts=[];
 let selectedDate=NOW;
 let cashOpenValue=0;
-let settingsLoading=null;
-let lastSettingsSync=0;
 let pendingManualDate=null;
+let ownerPinPurpose='settings';
+let ownerRetroUnlocked=false;
+let ownerRetroPin='';
+let retroEmployeeSelected=false;
 
-if(!localStorage.getItem('e_emps'))setEmps(DEFAULT_EMPS);
+if(!localStorage.getItem('e_emps'))setEmps([{name:'Даня',pin:'3113'},{name:'Элина',pin:'7407'}]);
 
 
 // Локальная дата без UTC сдвига
@@ -639,46 +645,45 @@ function localDateStr(d) {
   const day = String(d.getDate()).padStart(2, '0');
   return y + '-' + m + '-' + day;
 }
-let lastTouchEndAt = 0;
-document.addEventListener('touchend', e => {
-  if (e.target.closest('button,input,textarea,a')) return;
-  const now = Date.now();
-  if (now - lastTouchEndAt <= 300) e.preventDefault();
-  lastTouchEndAt = now;
-}, { passive: false });
-document.addEventListener('gesturestart', e => e.preventDefault());
-function getMoscowNow(){
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Moscow',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  }).formatToParts(new Date()).reduce((acc, part)=>{
-    acc[part.type]=part.value;
-    return acc;
-  }, {});
-  return new Date(Number(parts.year), Number(parts.month)-1, Number(parts.day), Number(parts.hour), Number(parts.minute), Number(parts.second));
+function getNowMskDate() {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
 }
-function isPastDate(d){
-  return localDateStr(d) < localDateStr(getMoscowNow());
+function isPastBeyondDays(dateObj, days) {
+  const now = getNowMskDate();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const picked = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+  const diff = Math.floor((today - picked) / 86400000);
+  return diff > days;
 }
-function daysBeforeToday(d){
-  const today = getMoscowNow();
-  const a = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
-  const b = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  return Math.round((a - b) / 86400000);
+function toast(msg){
+  const el = g('toast');
+  if(!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(window.__etnaToastTimer);
+  window.__etnaToastTimer = setTimeout(()=>el.classList.remove('show'), 2200);
 }
-function isLockedPastDate(d){
-  return daysBeforeToday(d) > 2;
+async function refreshInitSettings(){
+  const sheetsUrl = gc('sheets-url');
+  if (!sheetsUrl) return;
+  try {
+    const r = await fetch(sheetsUrl + '?action=getInitData&date=' + localDateStr(getNowMskDate()));
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.ownerPin) sc('owner-pin', String(d.ownerPin));
+    if (d.hookahRate) sc('hookah-rate', d.hookahRate);
+    if (d.maxTaxi !== undefined) sc('max-taxi', d.maxTaxi);
+    if (d.botToken) sc('bot-token', d.botToken);
+    if (d.chatOwner) sc('chat-owner', d.chatOwner);
+    if (d.chatGeneral) sc('chat-general', d.chatGeneral);
+  } catch(_) {}
 }
-function dateLabel(d){
-  const dayNames = ['вс','пн','вт','ср','чт','пт','сб'];
-  return d.toLocaleDateString('ru-RU',{day:'numeric',month:'short',year:'numeric'})
-    + ' (' + dayNames[d.getDay()] + ')';
+function startSettingsAutoRefresh(){
+  refreshInitSettings();
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') refreshInitSettings();
+  });
+  setInterval(refreshInitSettings, 6 * 60 * 60 * 1000);
 }
 const DAYS=['пн','вт','ср','чт','пт','сб','вс'];
 function getDayIndex(d){return(d.getDay()+6)%7;}
@@ -812,200 +817,6 @@ function toggleChange(){
   arrow.textContent = open ? '▸' : '▾';
 }
 
-function totalExtras(){
-  return extras.reduce((sum, item)=>sum+(Number(item.amount)||0),0);
-}
-
-function setComputed(id, value, extraClass){
-  const el = g(id);
-  if (!el) return;
-  el.textContent = typeof value === 'number' ? fmt(value) : value;
-  el.className = 'crow-computed' + (extraClass ? ' ' + extraClass : '');
-}
-
-function calc(){
-  const term1 = num('terminal1');
-  const term2 = num('terminal2');
-  const netmonet = num('netmonet');
-  const cardRev = term1 + term2 + netmonet;
-  const cashRev = num('cashRev');
-  const transRev = num('transRev');
-  const totalRev = cardRev + cashRev + transRev;
-  const hookahRate = parseFloat(gc('hookah-rate')) || 300;
-  const hookahPay = num('hookahs') * hookahRate;
-  const extrasSum = totalExtras();
-  const totalExp = num('taxiCost') + num('washCost') + hookahPay + extrasSum;
-  const cashCalc = num('cashOpen') + cashRev + transRev - num('washCost') - hookahPay - extrasSum - num('collection');
-  const diff = num('cashActual') - cashCalc;
-  const diffLimit = parseFloat(gc('cash-diff-limit')) || 500;
-
-  setComputed('cardTotal', cardRev, 'hint');
-  setComputed('totalRev', totalRev);
-  setComputed('hookahPay', hookahPay);
-  setComputed('totalExp', totalExp);
-  setComputed('transCheck', transRev, 'hint');
-  setComputed('cashCalc', cashCalc);
-
-  const diffClass = diff === 0 ? 'success' : Math.abs(diff) <= diffLimit ? '' : 'danger';
-  setComputed('cashDiff', diff, diffClass);
-
-  const cashAlert = g('cashAlert');
-  if (cashAlert) {
-    const cashTouched = g('cashActual').getAttribute('data-touched') === 'true';
-    cashAlert.style.display = cashTouched ? 'block' : 'none';
-    if (diff === 0) {
-      cashAlert.className = 'alert-row success';
-      cashAlert.textContent = 'Касса сходится';
-    } else if (Math.abs(diff) <= diffLimit) {
-      cashAlert.className = 'alert-row warn';
-      cashAlert.textContent = `Расхождение в пределах лимита: ${fmt(diff)}`;
-    } else {
-      cashAlert.className = 'alert-row danger';
-      cashAlert.textContent = diff > 0 ? `Излишек: ${fmt(diff)}` : `Недостача: ${fmt(Math.abs(diff))}`;
-    }
-  }
-
-  const maxTaxi = parseFloat(gc('max-taxi')) || 0;
-  const taxi = num('taxiCost');
-  const taxiAlert = g('taxiAlert');
-  if (taxiAlert) {
-    if (maxTaxi > 0 && taxi > maxTaxi) {
-      taxiAlert.style.display = 'block';
-      taxiAlert.className = 'alert-row danger';
-      taxiAlert.textContent = `Такси выше лимита: ${fmt(taxi)} / ${fmt(maxTaxi)}`;
-    } else {
-      taxiAlert.style.display = 'none';
-      taxiAlert.textContent = '';
-    }
-  }
-
-  updatePlan();
-}
-
-function cashConfirm(ok){
-  const inputBlock = g('cashInputBlock');
-  const input = g('cashOpen');
-  if (ok) {
-    input.value = cashOpenValue;
-    input.setAttribute('data-touched', 'true');
-    input.style.borderColor = 'var(--success)';
-    inputBlock.style.display = 'none';
-    showToast('Открытие кассы подтверждено', 'success');
-  } else {
-    input.value = '';
-    input.removeAttribute('data-touched');
-    input.style.borderColor = '';
-    inputBlock.style.display = 'block';
-    setTimeout(()=>input.focus(), 50);
-  }
-  calc();
-}
-
-function escapeHtml(value){
-  return String(value || '').replace(/[&<>"']/g, ch => ({
-    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
-  })[ch]);
-}
-
-function renderExtras(){
-  const list = g('extraList');
-  if (!list) return;
-  if (!extras.length) {
-    list.innerHTML = '';
-    return;
-  }
-  list.innerHTML = extras.map((item, i)=>`
-    <div class="extra-item">
-      <div class="extra-item-info">
-        <div class="extra-item-amount">${fmt(Number(item.amount)||0)}</div>
-        <div class="extra-item-comment">${escapeHtml(item.comment || 'Без комментария')}</div>
-      </div>
-      <button class="extra-item-del" onclick="removeExtra(${i})">×</button>
-    </div>
-  `).join('');
-}
-
-function openExtra(){
-  g('extraAmt').value = '';
-  g('extraCmt').value = '';
-  g('extraOverlay').classList.add('show');
-  setTimeout(()=>g('extraAmt').focus(), 80);
-}
-
-function closeExtra(){
-  g('extraOverlay').classList.remove('show');
-}
-
-function saveExtra(){
-  const amount = parseFloat(g('extraAmt').value) || 0;
-  const comment = g('extraCmt').value.trim();
-  if (amount <= 0) {
-    showToast('Укажите сумму расхода', 'error');
-    return;
-  }
-  extras.push({ amount, comment });
-  renderExtras();
-  closeExtra();
-  calc();
-}
-
-function removeExtra(index){
-  extras.splice(index, 1);
-  renderExtras();
-  calc();
-}
-
-function addPhotos(input){
-  const files = Array.from(input.files || []);
-  const tooLarge = files.find(file => file.size > 9 * 1024 * 1024);
-  if (tooLarge) {
-    input.value = '';
-    showToast('Фото больше 9 МБ не загрузится', 'error');
-    return;
-  }
-  photosReceipts.push(...files);
-  input.value = '';
-  renderPhotos();
-}
-
-function renderPhotos(){
-  const grid = g('photosReceipts');
-  if (!grid) return;
-  grid.innerHTML = photosReceipts.map((file, i)=>`
-    <div class="photo-wrap">
-      <img class="photo-thumb" src="${URL.createObjectURL(file)}" alt="">
-      <button class="photo-del" onclick="removePhoto(${i})">×</button>
-    </div>
-  `).join('');
-}
-
-function removePhoto(index){
-  photosReceipts.splice(index, 1);
-  renderPhotos();
-}
-
-function updateProgress(percent, title, steps){
-  g('sendProgress').style.width = Math.max(0, Math.min(100, percent)) + '%';
-  g('sendStatus').textContent = title;
-  g('sendSteps').innerHTML = (steps || []).map(step => {
-    const mark = step.state === 'done' ? '✓' : step.state === 'active' ? '…' : '•';
-    return `<div style="padding:3px 0;color:${step.state === 'done' ? 'var(--success)' : 'var(--muted)'}">${mark} ${escapeHtml(step.label)}</div>`;
-  }).join('');
-}
-
-function fileToDataUrl(file){
-  return new Promise((resolve, reject)=>{
-    const reader = new FileReader();
-    reader.onload = () => resolve({
-      name: file.name || 'photo.jpg',
-      type: file.type || 'image/jpeg',
-      dataUrl: reader.result
-    });
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 function updatePlan(){
   const di=getDayIndex(selectedDate);
   const planR=parseFloat(gc('plan-rev-'+di))||45000;
@@ -1036,162 +847,74 @@ function updatePlan(){
   if(pcCashEl) pcCashEl.innerHTML=bdg(pC);
 }
 
-function syncSettingsFromPayload(d){
-  if (!d || d.status === 'error') return;
-  if (Array.isArray(d.employees) && d.employees.length) setEmps(d.employees);
-  if (d.ownerPin) sc('owner-pin', String(d.ownerPin));
-  if (d.ownerName) sc('owner-name', String(d.ownerName));
-  if (d.hookahRate !== undefined) sc('hookah-rate', d.hookahRate);
-  if (d.cashDiffLimit !== undefined) sc('cash-diff-limit', d.cashDiffLimit);
-  if (d.maxTaxi !== undefined) sc('max-taxi', d.maxTaxi);
-  if (d.lateHour !== undefined) sc('late-hour', d.lateHour);
-  if (d.plans) {
-    const indexByCode = { 'Пн':0, 'Вт':1, 'Ср':2, 'Чт':3, 'Пт':4, 'Сб':5, 'Вс':6 };
-    Object.keys(d.plans).forEach(code => {
-      const idx = indexByCode[code];
-      if (idx === undefined) return;
-      const plan = d.plans[code] || {};
-      if (plan.revenue !== undefined) sc('plan-rev-'+idx, plan.revenue);
-      if (plan.cash !== undefined) sc('plan-cash-'+idx, plan.cash);
-    });
-  } else {
-    const idx = getDayIndex(selectedDate);
-    if (d.planRevenue !== undefined) sc('plan-rev-'+idx, d.planRevenue);
-    if (d.planCash !== undefined) sc('plan-cash-'+idx, d.planCash);
-  }
-  lastSettingsSync = Date.now();
-  localStorage.setItem('e_settings-sync-at', String(lastSettingsSync));
-}
-
-async function refreshSettings(force){
-  const sheetsUrl = gc('sheets-url');
-  if (!sheetsUrl) return null;
-  if (!force && settingsLoading) return settingsLoading;
-  if (!force && Date.now() - lastSettingsSync < 30000) return null;
-
-  settingsLoading = fetch(sheetsUrl + '?action=getInitData&date=' + localDateStr(selectedDate))
-    .then(r => {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    })
-    .then(d => {
-      syncSettingsFromPayload(d);
-      updatePlan();
-      calc();
-      return d;
-    })
-    .catch(err => {
-      console.warn('Settings refresh failed:', err);
-      return null;
-    })
-    .finally(() => { settingsLoading = null; });
-
-  return settingsLoading;
-}
-
-refreshSettings(true);
-setInterval(()=>refreshSettings(true), SETTINGS_REFRESH_MS);
-document.addEventListener('visibilitychange', ()=>{
-  if (!document.hidden) refreshSettings(true);
-});
-
 function showForm(){
-  g('fhGreeting').textContent='Привет, '+currentEmp.name+'!';
+  updateGreeting();
   renderDateRow();
   updatePrevDateLabel();
   loadLastCashOpen();
   updatePlan();
   show('formScreen');
 }
+function updateGreeting(){
+  g('fhGreeting').textContent='Привет, '+(currentEmp ? currentEmp.name : '')+'!';
+}
 
 function updatePrevDateLabel(){
-  const el = g('prevShiftDateLabel');
-  if (!el) return;
   const prev = new Date(selectedDate);
   prev.setDate(prev.getDate() - 1);
   const dayNames = ['вс','пн','вт','ср','чт','пт','сб'];
-  el.textContent = prev.toLocaleDateString('ru-RU',{day:'numeric',month:'short'})
-    + ' (' + dayNames[prev.getDay()] + ')';
+  const label = prev.toLocaleDateString('ru-RU',{day:'numeric',month:'short'}) + ' (' + dayNames[prev.getDay()] + ')';
+  const el = g('prevShiftDateLabel');
+  if (el) el.textContent = label;
+  const taxiDateEl = g('taxiDateLabel');
+  if (taxiDateEl) taxiDateEl.textContent = label;
 }
 
 function renderDateRow(){
   const row = g('dateRow');
-  const label = dateLabel(selectedDate);
+  const dayNames = ['вс','пн','вт','ср','чт','пт','сб'];
+  const d = selectedDate;
+  const label = d.toLocaleDateString('ru-RU',{day:'numeric',month:'short'})
+    + ' (' + dayNames[d.getDay()] + ')';
   row.innerHTML = `
-    <div class="date-wrap">
+    <div class="date-wrap" style="display:flex;align-items:center;gap:8px">
       <div class="date-chip active" style="font-size:10px">${label}</div>
-      <input class="date-native" type="date" id="hiddenDateInput"
-        value="${localDateStr(selectedDate)}"
-        onchange="applyManualDate(this.value)"
-        aria-label="Выбрать дату смены">
+      <input class="date-hit" type="date" id="hiddenDateInput" onchange="applyManualDate(this.value)">
     </div>
   `;
-}
-
-function openDatePicker(){
   const input = g('hiddenDateInput');
   if (!input) return;
   input.value = localDateStr(selectedDate);
-  input.removeAttribute('max');
-  input.removeAttribute('min');
-  if (typeof input.showPicker === 'function') input.showPicker();
-  else input.focus();
+  input.max = localDateStr(getNowMskDate());
 }
 
 function applyManualDate(val){
   if (!val) return;
   const parts = val.split('-');
-  const nextDate = new Date(Number(parts[0]), Number(parts[1])-1, Number(parts[2]));
-  if (isLockedPastDate(nextDate)) {
-    showOldDateBlocker(nextDate);
+  const picked = new Date(Number(parts[0]), Number(parts[1])-1, Number(parts[2]));
+  const nowMsk = getNowMskDate();
+  if (picked > nowMsk) {
+    toast('Нельзя выбрать будущую дату');
+    renderDateRow();
     return;
   }
-  if (isPastDate(nextDate)) {
-    pendingManualDate = nextDate;
-    g('dateConfirmText').textContent = 'Вы выбрали прошлую дату: ' + dateLabel(nextDate) + '. Продолжить?';
-    g('dateConfirmModal').classList.add('show');
-    return;
+  selectedDate = picked;
+  if (isPastBeyondDays(selectedDate, 2) && !ownerRetroUnlocked) {
+    showOldDateBlocker(selectedDate);
+  } else if (isPastBeyondDays(selectedDate, 0)) {
+    toast('Подтвердите, что дата выбрана вручную');
   }
-  setSelectedDate(nextDate);
-}
-
-function showOldDateBlocker(date){
-  const text = g('oldDateBlockerText');
-  if (text) text.textContent = 'Вы выбрали дату ' + dateLabel(date) + '. Правки старше двух дней доступны только через руководителя. Свяжитесь с ним, и вам помогут внести данные корректно.';
-  g('oldDateBlocker').classList.add('show');
-}
-
-function contactOwner(){
-  showToast('Ссылка на руководителя будет добавлена позже', 'error');
-}
-
-function setSelectedDate(nextDate){
-  selectedDate = nextDate;
   renderDateRow();
   updatePrevDateLabel();
   updatePlan();
   loadLastCashOpen();
 }
 
-function confirmManualDate(){
-  if (pendingManualDate) setSelectedDate(pendingManualDate);
-  pendingManualDate = null;
-  g('dateConfirmModal').classList.remove('show');
-}
-
-function cancelManualDate(){
-  pendingManualDate = null;
-  g('dateConfirmModal').classList.remove('show');
-  renderDateRow();
-}
-
 function selectDate(which){
-  if(which==='today')setSelectedDate(getMoscowNow());
-  else{
-    const d=getMoscowNow();
-    d.setDate(d.getDate()-1);
-    setSelectedDate(d);
-  }
+  if(which==='today')selectedDate=new Date(NOW);
+  else{selectedDate=new Date(NOW);selectedDate.setDate(selectedDate.getDate()-1);}
+  renderDateRow();
+  updatePlan();
 }
 
 async function loadLastCashOpen(){
@@ -1216,7 +939,6 @@ async function loadLastCashOpen(){
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
     console.log('[ЭТНА] Ответ сервера:', JSON.stringify(d));
-    syncSettingsFromPayload(d);
 
     // Остаток кассы
     cashOpenValue = (d.lastCashOpen !== undefined && d.lastCashOpen !== null)
@@ -1230,6 +952,20 @@ async function loadLastCashOpen(){
       el.style.color = 'var(--muted)';
     }
 
+    // Планы на день
+    if (d.planRevenue) sc('plan-rev-' + getDayIndex(selectedDate), d.planRevenue);
+    if (d.planCash)    sc('plan-cash-' + getDayIndex(selectedDate), d.planCash);
+
+    // Настройки
+    if (d.hookahRate)  sc('hookah-rate', d.hookahRate);
+    if (d.ownerPin)    sc('owner-pin', String(d.ownerPin));
+    if (d.maxTaxi !== undefined) sc('max-taxi', d.maxTaxi);
+
+    // Telegram — синхронизация для всех устройств
+    if (d.botToken)    { sc('bot-token',    d.botToken);    }
+    if (d.chatOwner)   { sc('chat-owner',   d.chatOwner);   }
+    if (d.chatGeneral) { sc('chat-general', d.chatGeneral); }
+
     updatePlan();
 
   } catch(err) {
@@ -1240,8 +976,12 @@ async function loadLastCashOpen(){
   }
 }
 async function doSubmit(){
-  if (isLockedPastDate(selectedDate)) {
+  if (isPastBeyondDays(selectedDate, 2) && !ownerRetroUnlocked) {
     showOldDateBlocker(selectedDate);
+    return;
+  }
+  if (ownerRetroUnlocked && isPastBeyondDays(selectedDate, 2) && !retroEmployeeSelected) {
+    openRetroEmployeeModal();
     return;
   }
   // Валидация всех обязательных полей
@@ -1264,20 +1004,23 @@ async function doSubmit(){
 
   const btn=g('submitBtn');btn.disabled=true;
   g('sendingOverlay').classList.add('show');
-  const sheetsUrl=gc('sheets-url');
-  if (!sheetsUrl) {
-    g('sendingOverlay').classList.remove('show');
-    btn.disabled = false;
-    showToast('Apps Script URL не настроен', 'error');
-    return;
-  }
 
-  const steps = [
-    { key: 'prepare', label: 'Подготовка отчёта', state: 'pending' },
-    { key: 'photos', label: `Подготовка фото (${photosReceipts.length})`, state: photosReceipts.length ? 'pending' : 'done' },
-    { key: 'server', label: 'Отправка в таблицу и Telegram', state: 'pending' }
-  ];
+  // Подсчитываем количество шагов для прогресса
+  const token=gc('bot-token');
+  const chatOwner=gc('chat-owner');
+  const chatGeneral=gc('chat-general');
+  const sheetsUrl=gc('sheets-url');
+
+  const steps = [];
+  if (token && chatGeneral) steps.push({ key: 'short', label: 'Краткая сводка в общий чат', state: 'pending' });
+  if (token && chatOwner)   steps.push({ key: 'full',  label: 'Полный отчёт руководителю', state: 'pending' });
+  if (token && chatOwner && photosReceipts.length) steps.push({ key: 'recPh', label: `Фото чеков (${photosReceipts.length})`, state: 'pending' });
+
+  if (sheetsUrl) steps.push({ key: 'sheets', label: 'Запись в таблицу', state: 'pending' });
+
+  let stepIdx = 0;
   const totalSteps = steps.length;
+
   function setStepState(key, state) {
     const idx = steps.findIndex(s => s.key === key);
     if (idx !== -1) steps[idx].state = state;
@@ -1307,62 +1050,191 @@ async function doSubmit(){
   const cashCalc=num('cashOpen')+num('cashRev')+num('transRev')-num('washCost')-hookahPay-totalExtras()-num('collection');
   const diff=num('cashActual')-cashCalc;
   const pct=Math.round(factR/planR*100);
+  const icon=pct>=100?'🟢':pct>=80?'🟡':'🔴';
+
+  // ── Форматирование числа ──
+  const fmtR=n=>n.toLocaleString('ru-RU')+' ₽';
+
+  const extraLines=extras.map(e=>`  • ${fmtR(e.amount)}${e.comment?' — '+e.comment:''}`).join('\n');
   const dayNames=['вс','пн','вт','ср','чт','пт','сб'];
   const dayName=dayNames[selectedDate.getDay()];
   const dateStr=selectedDate.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'})+' ('+dayName+')';
-  setStepState('prepare', 'active');
 
-  try {
-    let photos = [];
-    if (photosReceipts.length) {
-      setStepState('prepare', 'done');
-      setStepState('photos', 'active');
-      photos = await Promise.all(photosReceipts.map(fileToDataUrl));
-      setStepState('photos', 'done');
-    } else {
-      setStepState('prepare', 'done');
-    }
+  const cashDiffLine=diff===0
+    ?'✅ Касса сходится'
+    :diff>0
+      ?`⚠️ Излишек: ${fmtR(diff)}`
+      :`❌ Недостача: ${fmtR(Math.abs(diff))}`;
 
-    const payload = JSON.stringify({
-      date: localDateStr(selectedDate),
-      employee: currentEmp.name,
-      cashOpen: num('cashOpen'),
-      cashOpenCalc: cashOpenValue,
-      terminal1: term1, terminal2: term2, netmonet, cardRev,
-      cashRev: num('cashRev'), transRev: num('transRev'), totalRev: factR,
-      taxiCost: num('taxiCost'), washCost: num('washCost'),
-      hookahs: num('hookahs'), hookahPay,
-      extras: JSON.stringify(extras), totalExp: totalE,
-      changeAmount: num('changeAmount'),
-      collection: num('collection'), cashActual: num('cashActual'),
-      cashCalc, cashDiff: diff, pct: pct/100,
-      planRevenue: planR, planCash: planC,
-      photos
-    });
+  const fullMsg=`*ЭТНА  |  ${dateStr}*
+${currentEmp.name}
 
-    setStepState('server', 'active');
-    await fetch(sheetsUrl, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: payload
-    });
-    setStepState('server', 'done');
-    updateProgress(100, 'ГОТОВО', steps);
-    await new Promise(r => setTimeout(r, 400));
-    g('sendingOverlay').classList.remove('show');
-    show('successScreen');
-    g('sSub').textContent=`Смена ${dateStr}\nСотрудник: ${currentEmp.name}\n\nОтчёт передан в Apps Script. Таблица и Telegram обрабатываются на сервере.`;
-  } catch(e) {
-    console.warn('Submit failed:', e.message);
-    g('sendingOverlay').classList.remove('show');
-    btn.disabled = false;
-    showToast('Не удалось отправить отчёт', 'error');
+━━━ ДОХОДЫ ━━━
+Безнал (итого): ${fmtR(cardRev)}
+Наличные: ${fmtR(num('cashRev'))}
+Переводы: ${fmtR(num('transRev'))}
+
+*Итого выручка: ${fmtR(factR)}*
+
+━━━ РАСХОДЫ (прошлой смены) ━━━
+Такси (прош. смена): ${fmtR(num('taxiCost'))}${maxTaxiLimit>0&&num('taxiCost')>maxTaxiLimit?' ⚠️ ПРЕВЫШЕН ЛИМИТ':''}
+Мойка: ${fmtR(num('washCost'))}
+Кальянов: ${num('hookahs')} × ${hookahRate}₽ = ${fmtR(hookahPay)}${extras.length?'\nДоп. расходы:\n'+extraLines:''}
+
+*Итого расходов: ${fmtR(totalE)}*
+
+━━━ КАССА ━━━
+Инкассация: ${fmtR(num('collection'))}
+Факт: ${fmtR(num('cashActual'))}
+Расчёт: ${fmtR(cashCalc)}
+${cashDiffLine}
+
+━━━ ПЛАН ━━━
+${icon} Выручка: ${fmtR(factR)} / ${fmtR(planR)} (${pct}%)
+${factC>=planC?'✅':'❌'} Наличные: ${fmtR(factC)} / ${fmtR(planC)}`;
+
+  // Планы (planR/planC уже объявлены выше через di)
+  const pctRev  = Math.round(factR/planR*100);
+  const pctCash = Math.round(factC/planC*100);
+
+  function planBar(pct, width=10){
+    const filled = Math.round(Math.min(pct,100)/100*width);
+    return '█'.repeat(filled)+'░'.repeat(width-filled);
   }
+  function planStatus(pct){
+    if(pct>=100) return '✅ Выполнен';
+    if(pct>=80)  return '🟡 Близко';
+    return '🔴 Не выполнен';
+  }
+
+  const shortMsg=`${icon} *ЭТНА | Итоги смены* | ${dateStr}
+${currentEmp.name}
+
+━━━ ПЛАН ПО ВЫРУЧКЕ ━━━
+${planBar(pctRev)} ${pctRev}%
+Факт: *${fmtR(factR)}*
+План: ${fmtR(planR)}
+${planStatus(pctRev)}
+
+━━━ ПЛАН ПО НАЛИЧНЫМ ━━━
+${planBar(pctCash)} ${pctCash}%
+Факт: *${fmtR(factC)}*
+План: ${fmtR(planC)}
+${planStatus(pctCash)}`; 
+
+  const errors=[];
+
+  // Отправить текст в TG
+  async function tgText(chatId,text){
+    try{
+      const r=await fetch(`https://api.telegram.org/bot${token}/sendMessage`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({chat_id:chatId,text,parse_mode:'Markdown'})
+      });
+      const j=await r.json();
+      if(!j.ok)errors.push('TG: '+j.description);
+    }catch(e){errors.push('TG: '+e.message);}
+  }
+
+  // Отправить группу фото одним сообщением (sendMediaGroup)
+  // spoiler=true — фото скрыты под спойлером (нажать чтобы показать)
+  async function tgPhotos(chatId,files,caption){
+    if(!files.length)return;
+    try{
+      const chunks=[];
+      for(let i=0;i<files.length;i+=10)chunks.push(files.slice(i,i+10));
+      for(let ci=0;ci<chunks.length;ci++){
+        const chunk=chunks[ci];
+        const fd=new FormData();
+        fd.append('chat_id',chatId);
+        const media=[];
+        chunk.forEach((f,i)=>{
+          const key='photo'+i;
+          fd.append(key,f,f.name||`photo_${i}.jpg`);
+          const item={
+            type:'photo',
+            media:'attach://'+key,
+          };
+          if(ci===0&&i===0&&caption){item.caption=caption;}
+          media.push(item);
+        });
+        fd.append('media',JSON.stringify(media));
+        const r=await fetch(`https://api.telegram.org/bot${token}/sendMediaGroup`,{method:'POST',body:fd});
+        const j=await r.json();
+        if(!Array.isArray(j)&&!j.ok)errors.push('TG фото: '+j.description);
+      }
+    }catch(e){errors.push('TG фото: '+e.message);}
+  }
+
+  if(token){
+    if(chatGeneral){
+      setStepState('short', 'active');
+      await tgText(chatGeneral,shortMsg);
+      setStepState('short', 'done');
+    }
+    if(chatOwner){
+      setStepState('full', 'active');
+      await tgText(chatOwner,fullMsg);
+      setStepState('full', 'done');
+
+      if(photosReceipts.length){
+        setStepState('recPh', 'active');
+        await tgPhotos(chatOwner,photosReceipts,'📄 Чеки терминала | '+dateStr);
+        setStepState('recPh', 'done');
+      }
+
+    }
+  }
+
+  // Google Sheets — fetch через Apps Script URL
+  // Google Sheets через Apps Script
+  if (sheetsUrl) {
+    setStepState('sheets', 'active');
+    try {
+      const payload = JSON.stringify({
+        date: localDateStr(selectedDate),
+        employee: currentEmp.name,
+        cashOpen: num('cashOpen'),
+        cashOpenCalc: cashOpenValue,
+        terminal1: term1, terminal2: term2, netmonet, cardRev,
+        cashRev: num('cashRev'), transRev: num('transRev'), totalRev: factR,
+        taxiCost: num('taxiCost'), washCost: num('washCost'),
+        hookahs: num('hookahs'), hookahPay,
+        extras: JSON.stringify(extras), totalExp: totalE,
+          changeAmount: num('changeAmount'),
+        collection: num('collection'), cashActual: num('cashActual'),
+        cashDiff: diff, pct: pct/100,
+        ownerOverride: ownerRetroUnlocked,
+        ownerPin: ownerRetroUnlocked ? ownerRetroPin : ''
+      });
+      await fetch(sheetsUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: payload
+      });
+      setStepState('sheets', 'done');
+    } catch(e) {
+      console.warn('Sheets fetch error:', e.message);
+      setStepState('sheets', 'done');
+    }
+  }
+
+    updateProgress(100, 'ГОТОВО', steps);
+  await new Promise(r => setTimeout(r, 400));
+  g('sendingOverlay').classList.remove('show');
+  show('successScreen');
+
+  let sub=`Смена ${dateStr}\nСотрудник: ${currentEmp.name}`;
+  if(!token)sub+='\n\n⚙️ Telegram не настроен — зайдите в настройки.';
+  else if(!errors.length)sub+='\n\nОтправлено в Telegram и таблицу ✓';
+  else sub+='\n\n⚠️ '+errors.join('\n');
+  g('sSub').textContent=sub;
 }
 
 // ── CFG ──
 function openCfg(){
+  ownerPinPurpose='settings';
   // Показываем PIN-экран владельца перед настройками
   g('ownerPinBuf').value='';
   renderOwnerDots('');
@@ -1395,13 +1267,17 @@ function renderOwnerDots(val,state){
 
 async function checkOwnerPin(){
   const entered=g('ownerPinBuf').value;
-  await refreshSettings(true);
-  const savedPin=gc('owner-pin')||'1461';
+  // Пробуем получить PIN из Apps Script / localStorage
+  const savedPin=gc('owner-pin')||'0000';
   if(entered===savedPin){
     renderOwnerDots(entered);
     setTimeout(()=>{
       closeOwnerPin();
-      openCfgPanel();
+      if (ownerPinPurpose === 'retro') {
+        grantRetroAccess(entered);
+      } else {
+        openCfgPanel();
+      }
     },250);
   } else {
     renderOwnerDots(entered,'err');
@@ -1413,15 +1289,73 @@ async function checkOwnerPin(){
   }
 }
 
-async function openCfgPanel(){
-  await refreshSettings(true);
+function showOldDateBlocker(dateObj){
+  pendingManualDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+  g('oldDateOverlay').classList.add('show');
+}
+function closeOldDateOverlay(){
+  g('oldDateOverlay').classList.remove('show');
+}
+function authorizeOwnerRetro(){
+  ownerPinPurpose = 'retro';
+  g('ownerPinBuf').value='';
+  renderOwnerDots('');
+  g('ownerPinErr').textContent='';
+  closeOldDateOverlay();
+  g('ownerPinModal').classList.add('show');
+}
+function grantRetroAccess(pin){
+  if (!pendingManualDate) return;
+  ownerRetroUnlocked = true;
+  ownerRetroPin = String(pin || '');
+  retroEmployeeSelected = false;
+  selectedDate = new Date(pendingManualDate.getFullYear(), pendingManualDate.getMonth(), pendingManualDate.getDate());
+  renderDateRow();
+  updatePrevDateLabel();
+  loadLastCashOpen();
+  updatePlan();
+  toast('Ретроввод для выбранной даты разрешён');
+}
+function openRetroEmployeeModal(){
+  const list = g('retroEmployeeList');
+  const emps = getEmps();
+  list.innerHTML = emps.map((e, i) => `
+    <button class="date-lock-btn" style="width:100%;margin-bottom:8px" onclick="selectRetroEmployee(${i})">${e.name}</button>
+  `).join('');
+  g('retroEmployeeModal').classList.add('show');
+}
+function closeRetroEmployeeModal(){ g('retroEmployeeModal').classList.remove('show'); }
+function selectRetroEmployee(i){
+  const emps = getEmps();
+  if (!emps[i]) return;
+  currentEmp = emps[i];
+  retroEmployeeSelected = true;
+  updateGreeting();
+  closeRetroEmployeeModal();
+}
 
-  g('cfgToken').value='';
-  g('cfgOwner').value='';
-  g('cfgGeneral').value='';
+async function openCfgPanel(){
+  // Если ещё не синхронизировано — грузим с сервера прямо сейчас
+  const sheetsUrl = gc('sheets-url');
+  if (sheetsUrl && !gc('bot-token')) {
+    try {
+      const r = await fetch(sheetsUrl + '?action=getInitData&date=' + localDateStr(new Date()));
+      const d = await r.json();
+      if (d.botToken)    sc('bot-token',    d.botToken);
+      if (d.chatOwner)   sc('chat-owner',   d.chatOwner);
+      if (d.chatGeneral) sc('chat-general', d.chatGeneral);
+      if (d.ownerPin)    sc('owner-pin',    String(d.ownerPin));
+      if (d.hookahRate)  sc('hookah-rate',  d.hookahRate);
+      if (d.maxTaxi !== undefined) sc('max-taxi', d.maxTaxi);
+    } catch(e) { console.warn('Settings sync failed:', e); }
+  }
+
+  g('cfgToken').value=gc('bot-token');
+  g('cfgOwner').value=gc('chat-owner');
+  g('cfgGeneral').value=gc('chat-general');
   g('cfgHookahRate').value=gc('hookah-rate')||'300';
   if(g('cfgMaxTaxi')) g('cfgMaxTaxi').value=gc('max-taxi')||'0';
-  g('cfgOwnerPin').value=gc('owner-pin')||'1461';
+  g('cfgOwnerPin').value=gc('owner-pin')||'0000';
   renderPlanGrid();
   renderEmpList();
   g('cfgModal').classList.add('show');
@@ -1429,12 +1363,11 @@ async function openCfgPanel(){
 
 function renderPlanGrid(){
   const pg=g('planGrid');
-  const codes=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
   pg.innerHTML=DAYS.map((d,i)=>`
     <div class="plan-grid">
       <span class="plan-day">${d}</span>
-      <input class="field-input cfg-plan-rev" data-code="${codes[i]}" type="number" placeholder="45000" value="${gc('plan-rev-'+i)||''}" oninput="sc('plan-rev-${i}',this.value)" style="font-size:14px;padding:10px 12px">
-      <input class="field-input cfg-plan-cash" data-code="${codes[i]}" type="number" placeholder="12000" value="${gc('plan-cash-'+i)||''}" oninput="sc('plan-cash-${i}',this.value)" style="font-size:14px;padding:10px 12px">
+      <input class="field-input" type="number" placeholder="45000" value="${gc('plan-rev-'+i)||''}" oninput="sc('plan-rev-${i}',this.value)" style="font-size:14px;padding:10px 12px">
+      <input class="field-input" type="number" placeholder="12000" value="${gc('plan-cash-'+i)||''}" oninput="sc('plan-cash-${i}',this.value)" style="font-size:14px;padding:10px 12px">
     </div>
   `).join('');
 }
@@ -1457,47 +1390,30 @@ function addEmp(){const emps=getEmps();emps.push({name:'',pin:''});setEmps(emps)
 
 async function saveCfg(){
   // Сохраняем локально
+  sc('bot-token',g('cfgToken').value.trim());
+  sc('chat-owner',g('cfgOwner').value.trim());
+  sc('chat-general',g('cfgGeneral').value.trim());
   sc('hookah-rate',g('cfgHookahRate').value.trim());
   if(g('cfgMaxTaxi')) sc('max-taxi',g('cfgMaxTaxi').value.trim());
-  sc('owner-pin',g('cfgOwnerPin').value.trim()||'1461');
-  setEmps(getEmps().filter(e=>e.name.trim()&&e.pin.trim()));
+  sc('owner-pin',g('cfgOwnerPin').value.trim()||'0000');
 
   // И отправляем на сервер чтобы все сотрудники получили
   const sheetsUrl = gc('sheets-url');
   if (sheetsUrl) {
     try {
-      const plans = {};
-      document.querySelectorAll('.cfg-plan-rev').forEach(input => {
-        const code = input.dataset.code;
-        plans[code] = plans[code] || {};
-        plans[code].revenue = input.value.trim();
-      });
-      document.querySelectorAll('.cfg-plan-cash').forEach(input => {
-        const code = input.dataset.code;
-        plans[code] = plans[code] || {};
-        plans[code].cash = input.value.trim();
-      });
-      const payload = {
-        action: 'saveSettings',
-        hookahRate:  g('cfgHookahRate').value.trim(),
-        maxTaxi:     g('cfgMaxTaxi') ? g('cfgMaxTaxi').value.trim() : 0,
-        ownerName:   gc('owner-name') || 'Юра',
-        ownerPin:    g('cfgOwnerPin').value.trim() || '1461',
-        employees:   getEmps(),
-        plans
-      };
-      const tokenValue = g('cfgToken').value.trim();
-      const ownerValue = g('cfgOwner').value.trim();
-      const generalValue = g('cfgGeneral').value.trim();
-      if (tokenValue) payload.botToken = tokenValue;
-      if (ownerValue) payload.chatOwner = ownerValue;
-      if (generalValue) payload.chatGeneral = generalValue;
-
       await fetch(sheetsUrl, {
         method: 'POST',
         mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          action: 'saveSettings',
+          botToken:    g('cfgToken').value.trim(),
+          chatOwner:   g('cfgOwner').value.trim(),
+          chatGeneral: g('cfgGeneral').value.trim(),
+          hookahRate:  g('cfgHookahRate').value.trim(),
+          maxTaxi:     g('cfgMaxTaxi') ? g('cfgMaxTaxi').value.trim() : 0,
+          ownerPin:    g('cfgOwnerPin').value.trim() || '0000'
+        })
       });
       console.log('Settings saved to server');
     } catch(e) {
@@ -1522,6 +1438,7 @@ function showSavedBanner(){
   setTimeout(()=>{ if(b.parentNode) b.remove(); }, 3500);
 }
 
+startSettingsAutoRefresh();
 
 </script>
 <div class="toast" id="toast"></div>

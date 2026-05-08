@@ -232,6 +232,14 @@ function saveReport(data) {
       };
     }
 
+    const ownerOverride = String(data.ownerOverride) === 'true' || data.ownerOverride === true;
+    const ownerPinInput = String(data.ownerPin || '');
+    if (isLockedPastDateServer(shiftDate)) {
+      if (!ownerOverride || ownerPinInput !== String(params.ownerPin || '0000')) {
+        return { status: 'error', code: 'OLD_DATE_LOCKED', message: 'Старая дата доступна только по PIN руководителя' };
+      }
+    }
+
     const dayCode = getDayCode(data.date);
     const plan    = plans[dayCode] || { revenue: 45000, cash: 12000 };
 
@@ -588,6 +596,13 @@ function isLockedPastDateServer(shiftDate) {
 
 function getSpreadsheet() {
   return SpreadsheetApp.getActiveSpreadsheet();
+}
+
+function isLockedPastDateServer(shiftDate) {
+  const nowMsk = new Date(Utilities.formatDate(new Date(), 'GMT+3', 'yyyy-MM-dd') + 'T00:00:00');
+  const picked = new Date(shiftDate.getFullYear(), shiftDate.getMonth(), shiftDate.getDate());
+  const diffDays = Math.floor((nowMsk.getTime() - picked.getTime()) / 86400000);
+  return diffDays > 2;
 }
 
 function getPlansFromSettings(ss) {
