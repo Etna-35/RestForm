@@ -172,6 +172,8 @@ body{background:var(--bg);color:var(--text);font-family:'Golos Text',sans-serif;
 textarea.field-input{resize:none;min-height:80px;}
 .modal-btn{width:100%;background:var(--gold);color:#0e0e0e;font-family:'Unbounded',sans-serif;font-size:13px;font-weight:700;border:none;border-radius:var(--rs);padding:16px;cursor:pointer;}
 .modal-btn:active{background:var(--gold-light);}
+.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px;}
+.modal-btn.secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
 
 /* ══ CFG ══ */
 #cfgModal .modal{max-height:90vh;}
@@ -471,6 +473,19 @@ textarea.field-input{resize:none;min-height:80px;}
   </div>
 </div>
 
+<!-- ═══ MODAL: date confirm ═══ -->
+<div class="overlay" id="dateConfirmModal">
+  <div class="modal">
+    <div class="modal-title">Подтвердите дату</div>
+    <div style="font-size:14px;color:var(--text);line-height:1.55;margin-bottom:8px" id="dateConfirmText"></div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.45">Отчёт будет записан именно на выбранную дату. Это удобно для внесения данных с бумажного носителя.</div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="cancelManualDate()">Отмена</button>
+      <button class="modal-btn" onclick="confirmManualDate()">Подтвердить</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ MODAL: PIN владельца ═══ -->
 <div class="overlay" id="ownerPinModal">
   <div class="modal" style="text-align:center;padding:32px 24px 48px">
@@ -577,7 +592,7 @@ const setEmps=a=>localStorage.setItem('e_emps',JSON.stringify(a));
 const DEFAULT_EMPS=[{name:'Даня',pin:'3113'},{name:'Элина',pin:'7407'}];
 const SETTINGS_REFRESH_MS=6*60*60*1000;
 
-const NOW=new Date();
+const NOW=getMoscowNow();
 const h=NOW.getHours();
 // Показываем выбор "вчера" с 22:00 до 06:00
 // дата выбирается вручную через иконку
@@ -590,6 +605,7 @@ let selectedDate=NOW;
 let cashOpenValue=0;
 let settingsLoading=null;
 let lastSettingsSync=0;
+let pendingManualDate=null;
 
 if(!localStorage.getItem('e_emps'))setEmps(DEFAULT_EMPS);
 
@@ -600,6 +616,30 @@ function localDateStr(d) {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return y + '-' + m + '-' + day;
+}
+function getMoscowNow(){
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Moscow',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).formatToParts(new Date()).reduce((acc, part)=>{
+    acc[part.type]=part.value;
+    return acc;
+  }, {});
+  return new Date(Number(parts.year), Number(parts.month)-1, Number(parts.day), Number(parts.hour), Number(parts.minute), Number(parts.second));
+}
+function isPastDate(d){
+  return localDateStr(d) < localDateStr(getMoscowNow());
+}
+function dateLabel(d){
+  const dayNames = ['вс','пн','вт','ср','чт','пт','сб'];
+  return d.toLocaleDateString('ru-RU',{day:'numeric',month:'short',year:'numeric'})
+    + ' (' + dayNames[d.getDay()] + ')';
 }
 const DAYS=['пн','вт','ср','чт','пт','сб','вс'];
 function getDayIndex(d){return(d.getDay()+6)%7;}
@@ -1037,10 +1077,7 @@ function updatePrevDateLabel(){
 
 function renderDateRow(){
   const row = g('dateRow');
-  const dayNames = ['вс','пн','вт','ср','чт','пт','сб'];
-  const d = selectedDate;
-  const label = d.toLocaleDateString('ru-RU',{day:'numeric',month:'short'})
-    + ' (' + dayNames[d.getDay()] + ')';
+  const label = dateLabel(selectedDate);
   row.innerHTML = `
     <div style="display:flex;align-items:center;gap:8px">
       <div class="date-chip active" style="font-size:10px">${label}</div>
@@ -1055,29 +1092,51 @@ function openDatePicker(){
   const input = g('hiddenDateInput');
   if (!input) return;
   input.value = localDateStr(selectedDate);
-  // Ограничиваем: нельзя выбрать будущую дату и дату старше 3 дней
-  const maxDate = localDateStr(NOW);
-  const minD = new Date(NOW); minD.setDate(minD.getDate()-3);
-  input.max = maxDate;
-  input.min = localDateStr(minD);
+  input.removeAttribute('max');
+  input.removeAttribute('min');
   input.click();
 }
 
 function applyManualDate(val){
   if (!val) return;
   const parts = val.split('-');
-  selectedDate = new Date(Number(parts[0]), Number(parts[1])-1, Number(parts[2]));
+  const nextDate = new Date(Number(parts[0]), Number(parts[1])-1, Number(parts[2]));
+  if (isPastDate(nextDate)) {
+    pendingManualDate = nextDate;
+    g('dateConfirmText').textContent = 'Вы выбрали прошлую дату: ' + dateLabel(nextDate) + '. Продолжить?';
+    g('dateConfirmModal').classList.add('show');
+    return;
+  }
+  setSelectedDate(nextDate);
+}
+
+function setSelectedDate(nextDate){
+  selectedDate = nextDate;
   renderDateRow();
   updatePrevDateLabel();
   updatePlan();
   loadLastCashOpen();
 }
 
-function selectDate(which){
-  if(which==='today')selectedDate=new Date(NOW);
-  else{selectedDate=new Date(NOW);selectedDate.setDate(selectedDate.getDate()-1);}
+function confirmManualDate(){
+  if (pendingManualDate) setSelectedDate(pendingManualDate);
+  pendingManualDate = null;
+  g('dateConfirmModal').classList.remove('show');
+}
+
+function cancelManualDate(){
+  pendingManualDate = null;
+  g('dateConfirmModal').classList.remove('show');
   renderDateRow();
-  updatePlan();
+}
+
+function selectDate(which){
+  if(which==='today')setSelectedDate(getMoscowNow());
+  else{
+    const d=getMoscowNow();
+    d.setDate(d.getDate()-1);
+    setSelectedDate(d);
+  }
 }
 
 async function loadLastCashOpen(){
