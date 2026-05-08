@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ЭТНА — Закрытие смены</title>
+<!--
+═══════════════════════════════════════════════════════════════
+ВАЖНО! ПЕРЕД ЗАЛИВКОЙ НА NETLIFY:
+Вставьте сюда URL вашего Apps Script веб-приложения.
+Получить URL: Apps Script → Развернуть → Веб-приложение → Копировать URL
+═══════════════════════════════════════════════════════════════
+-->
+<script>
+window.APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyT8sYT3h7tlWBujDdN9HD3pgVj_koub9L2cLkl2Yk2zyLk97bqjpX993UEZlxCz2yiJg/exec";
+</script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=Golos+Text:wght@400;500;600&display=swap');
+
+:root {
+  --bg: #0e0e0e;
+  --surface: #181818;
+  --surface2: #222;
+  --border: #2e2e2e;
+  --gold: #c8a96e;
+  --gold-light: #e2c98a;
+  --gold-dim: rgba(200,169,110,0.13);
+  --text: #f0ead8;
+  --muted: #8a8070;
+  --dim: #4a4540;
+  --danger: #e05a4a;
+  --danger-dim: rgba(224,90,74,0.11);
+  --success: #5ab87a;
+  --success-dim: rgba(90,184,122,0.11);
+  --warn: #e0a84a;
+  --warn-dim: rgba(224,168,74,0.11);
+  --r: 12px;
+  --rs: 8px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}button{font-family:inherit;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--text);font-family:'Golos Text',sans-serif;font-size:15px;min-height:100vh;overflow-x:hidden;}
+
+.screen{display:none;min-height:100vh;}.screen.show{min-height:100vh;}
+.screen.show{display:flex;flex-direction:column;}
+
+/* ══ PIN ══ */
+#pinScreen{align-items:center;justify-content:center;padding:40px 24px;}
+.pin-logo{font-family:'Unbounded',sans-serif;font-size:28px;font-weight:700;color:var(--gold);letter-spacing:.14em;margin-bottom:6px;text-align:center;}
+.pin-tag{font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;text-align:center;margin-bottom:40px;}
+.pin-dots{display:flex;gap:16px;justify-content:center;margin-bottom:36px;}
+.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);background:transparent;transition:all .15s;}
+.pin-dot.filled{background:var(--gold);border-color:var(--gold);}
+.pin-dot.err{background:var(--danger);border-color:var(--danger);}
+.pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;max-width:300px;}
+.pkey{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px 10px;font-family:'Unbounded',sans-serif;font-size:20px;font-weight:600;color:var(--text);cursor:pointer;transition:all .12s;user-select:none;text-align:center;-webkit-appearance:none;appearance:none;outline:none;width:100%;}
+.pkey:active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);transform:scale(.95);}
+.pkey.del{font-size:22px;color:var(--muted);}
+.pin-err{color:var(--danger);font-size:13px;text-align:center;margin-top:14px;min-height:18px;}
+.pin-cfg{position:fixed;bottom:24px;left:0;right:0;text-align:center;font-size:12px;color:var(--dim);}
+.pin-cfg a{color:var(--muted);text-decoration:underline;cursor:pointer;}
+
+/* ══ FORM ══ */
+#formScreen{flex-direction:column;}
+.fh{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;position:sticky;top:0;z-index:50;display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.fh-left{flex:1;}
+.fh-brand{font-family:'Unbounded',sans-serif;font-size:15px;font-weight:700;color:var(--gold);margin-bottom:2px;}
+.fh-greeting{font-size:12px;color:var(--muted);}
+.fh-date{display:flex;gap:6px;align-items:center;flex-shrink:0;}
+.date-chip{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 11px;font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s;font-family:'Unbounded',sans-serif;letter-spacing:.02em;}
+.date-chip.active{background:var(--gold);color:#0e0e0e;border-color:var(--gold);}
+
+.fb{padding:16px;padding-bottom:100px;}
+
+/* ══ BLOCKS ══ */
+.bl{margin-bottom:12px;}
+.bl-title{font-family:'Unbounded',sans-serif;font-size:11px;font-weight:600;letter-spacing:.1em;color:var(--gold);text-transform:uppercase;margin-bottom:8px;padding:0 2px;}
+.bl-hint{font-size:12px;color:var(--dim);line-height:1.5;padding:0 2px;margin-bottom:8px;}
+
+/* ══ CARD ══ */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+.crow{display:flex;align-items:center;border-bottom:1px solid var(--border);padding:0 16px;}
+.crow:last-child{border-bottom:none;}
+.crow-label{font-size:13px;color:var(--muted);flex:1;padding:14px 0;line-height:1.3;}
+.crow-label.bold{color:var(--text);font-weight:600;}
+.crow-label .note{display:block;font-size:11px;color:var(--dim);margin-top:2px;}
+.crow-input{background:transparent;border:none;outline:none;font-family:'Golos Text',sans-serif;font-size:16px;color:var(--text);text-align:right;width:130px;padding:14px 0;-webkit-appearance:none;-moz-appearance:textfield;}
+.crow-input::placeholder{color:var(--dim);}
+.crow-input::-webkit-inner-spin-button{-webkit-appearance:none;}
+.crow-computed{font-family:'Unbounded',sans-serif;font-size:15px;font-weight:600;color:var(--gold);padding:14px 0;text-align:right;min-width:130px;}
+.crow-computed.danger{color:var(--danger);}
+.crow-computed.success{color:var(--success);}
+.crow-computed.hint{color:var(--dim);font-size:14px;font-weight:500;}
+
+/* ══ CASH OPEN CONFIRM ══ */
+.cash-confirm{padding:16px;display:flex;flex-direction:column;gap:12px;}
+.cash-amount{font-family:'Unbounded',sans-serif;font-size:24px;font-weight:700;color:var(--gold);text-align:center;margin-bottom:4px;}
+.cash-question{font-size:13px;color:var(--muted);text-align:center;margin-bottom:8px;}
+.cash-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.cash-btn{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:14px;font-family:'Unbounded',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;text-align:center;}
+.cash-btn.ok{color:var(--success);}
+.cash-btn.ok:active{background:var(--success-dim);border-color:var(--success);}
+.cash-btn.no{color:var(--danger);}
+.cash-btn.no:active{background:var(--danger-dim);border-color:var(--danger);}
+
+/* ══ EXTRA ══ */
+.extra-list{padding:0 16px;}
+.extra-item{border-bottom:1px solid var(--border);padding:12px 0;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+.extra-item:last-child{border-bottom:none;}
+.extra-item-info{flex:1;}
+.extra-item-amount{font-weight:600;color:var(--text);font-size:15px;}
+.extra-item-comment{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4;}
+.extra-item-del{background:none;border:none;color:var(--dim);font-size:18px;cursor:pointer;padding:2px 4px;flex-shrink:0;}
+.extra-item-del:active{color:var(--danger);}
+.add-extra{display:flex;align-items:center;gap:8px;padding:14px 16px;background:none;border:none;border-top:1px solid var(--border);width:100%;cursor:pointer;color:var(--gold);font-size:14px;font-family:'Golos Text',sans-serif;}
+.add-extra:active{background:var(--gold-dim);}
+
+/* ══ ALERT ══ */
+.alert-row{display:none;padding:10px 16px;font-size:13px;border-top:1px solid var(--border);}
+.alert-row.show{display:block;}
+.alert-row.danger{background:var(--danger-dim);color:var(--danger);}
+.alert-row.success{background:var(--success-dim);color:var(--success);}
+.alert-row.warn{background:var(--warn-dim);color:var(--warn);}
+
+/* ══ PLAN ══ */
+.plan-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+.plan-head{display:grid;grid-template-columns:1fr 90px 90px 52px;padding:8px 14px;border-bottom:1px solid var(--border);}
+.plan-head span{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);}
+.plan-head span:not(:first-child){text-align:right;}
+.plan-row{display:grid;grid-template-columns:1fr 90px 90px 52px;padding:12px 14px;border-bottom:1px solid var(--border);align-items:center;}
+.plan-row:last-child{border-bottom:none;}
+.plan-row span{font-size:13px;color:var(--muted);}
+.plan-row span:not(:first-child){text-align:right;}
+.plan-row .val{color:var(--text);font-weight:600;}
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;font-family:'Unbounded',sans-serif;}
+.badge.ok{background:var(--success-dim);color:var(--success);}
+.badge.no{background:var(--danger-dim);color:var(--danger);}
+.badge.mid{background:var(--warn-dim);color:var(--warn);}
+
+/* ══ PHOTOS ══ */
+.photo-area{margin:0 16px 0;border:2px dashed var(--border);border-radius:var(--rs);padding:20px;text-align:center;cursor:pointer;transition:all .2s;}
+.photo-area:active{border-color:var(--gold);background:var(--gold-dim);}
+.photo-area input{display:none;}
+.photo-icon{font-size:26px;margin-bottom:6px;}
+.photo-label{font-size:13px;color:var(--muted);}
+.photo-label strong{color:var(--gold);}
+.photos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 16px 16px;}
+.photo-wrap{position:relative;}
+.photo-thumb{width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--rs);border:1px solid var(--border);}
+.photo-del{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.75);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+/* ══ SUBMIT ══ */
+.submit-wrap{padding:0 0 8px;}
+.submit-btn{width:100%;background:var(--gold);color:#0e0e0e;font-family:'Unbounded',sans-serif;font-size:14px;font-weight:700;letter-spacing:.04em;border:none;border-radius:var(--rs);padding:18px;cursor:pointer;transition:all .15s;}
+.submit-btn:active{transform:scale(.98);background:var(--gold-light);}
+.submit-btn:disabled{background:var(--border);color:var(--dim);cursor:not-allowed;transform:none;}
+
+/* ══ MODAL ══ */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;align-items:flex-end;}
+.overlay.show{display:flex;}
+.modal{background:var(--surface);border-radius:var(--r) var(--r) 0 0;padding:24px 20px 48px;width:100%;max-height:85vh;overflow-y:auto;}
+.modal-title{font-family:'Unbounded',sans-serif;font-size:15px;font-weight:600;color:var(--gold);margin-bottom:20px;}
+.modal-close{float:right;background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;margin-top:-4px;}
+.field{margin-bottom:14px;}
+.field-label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;font-weight:500;}
+.field-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:13px 14px;color:var(--text);font-family:'Golos Text',sans-serif;font-size:16px;outline:none;transition:border-color .2s;-webkit-appearance:none;}
+.field-input:focus{border-color:var(--gold);}
+.field-input[type=number]{-moz-appearance:textfield;}
+.field-input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+textarea.field-input{resize:none;min-height:80px;}
+.modal-btn{width:100%;background:var(--gold);color:#0e0e0e;font-family:'Unbounded',sans-serif;font-size:13px;font-weight:700;border:none;border-radius:var(--rs);padding:16px;cursor:pointer;}
+.modal-btn:active{background:var(--gold-light);}
+
+/* ══ CFG ══ */
+#cfgModal .modal{max-height:90vh;}
+.cfg-sec{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:18px 0 10px;}
+.emp-row{display:grid;grid-template-columns:auto 1fr 100px auto;gap:6px;margin-bottom:8px;align-items:center;}
+.emp-num{font-size:12px;color:var(--dim);padding:10px 4px;}
+.emp-del{background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);padding:10px;cursor:pointer;font-size:16px;}
+.emp-del:active{color:var(--danger);border-color:var(--danger);}
+.add-emp{background:var(--surface2);border:1px dashed var(--border);color:var(--muted);border-radius:var(--rs);padding:10px;width:100%;font-size:13px;cursor:pointer;margin-top:4px;}
+.add-emp:active{border-color:var(--gold);color:var(--gold);}
+.plan-grid{display:grid;grid-template-columns:auto 1fr 1fr;gap:8px;align-items:center;margin-bottom:6px;}
+.plan-day{font-size:12px;color:var(--muted);padding:10px 6px;}
+
+/* ══ SUCCESS ══ */
+#successScreen{align-items:center;justify-content:center;padding:40px 24px;text-align:center;}
+.s-icon{width:72px;height:72px;border-radius:50%;background:var(--success-dim);border:2px solid var(--success);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px;}
+.s-title{font-family:'Unbounded',sans-serif;font-size:20px;font-weight:700;color:var(--success);margin-bottom:8px;}
+.s-sub{font-size:14px;color:var(--muted);line-height:1.7;white-space:pre-line;}
+
+/* ══ SENDING ══ */
+#sendingOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+#sendingOverlay.show{display:flex;}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.send-txt{font-family:'Unbounded',sans-serif;font-size:12px;color:var(--muted);letter-spacing:.08em;}
+
+
+/* ══ TOAST ══ */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--success);color:#fff;font-family:'Unbounded',sans-serif;font-size:12px;padding:10px 20px;border-radius:20px;opacity:0;transition:all .3s;z-index:9999;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ══ REQUIRED FIELDS ══ */
+.crow-input[data-required="true"]::placeholder{color:var(--warn);}
+.crow-input[data-required="true"]:not([data-touched]){border-bottom:1px solid var(--warn-dim);}
+.pop{animation:pop .25s ease;}
+@keyframes pop{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+
+<!-- ═══ PIN ═══ -->
+<div class="screen show" id="pinScreen">
+  <div class="pin-logo">ЭТНА</div>
+  <div class="pin-tag">Закрытие смены</div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-keypad">
+    <button class="pkey" onclick="pk('1')">1</button><button class="pkey" onclick="pk('2')">2</button><button class="pkey" onclick="pk('3')">3</button>
+    <button class="pkey" onclick="pk('4')">4</button><button class="pkey" onclick="pk('5')">5</button><button class="pkey" onclick="pk('6')">6</button>
+    <button class="pkey" onclick="pk('7')">7</button><button class="pkey" onclick="pk('8')">8</button><button class="pkey" onclick="pk('9')">9</button>
+    <button class="pkey" style="visibility:hidden"></button>
+    <button class="pkey" onclick="pk('0')">0</button>
+    <button class="pkey del" onclick="pd()">⌫</button>
+  </div>
+  <div class="pin-err" id="pinErr"></div>
+  <div class="pin-cfg"><a onclick="openCfg()">⚙ Настройки руководителя</a></div>
+</div>
+
+<!-- ═══ FORM ═══ -->
+<div class="screen" id="formScreen">
+  <div class="fh">
+    <div class="fh-left">
+      <div class="fh-brand">ЭТНА</div>
+      <div class="fh-greeting" id="fhGreeting"></div>
+    </div>
+    <div class="fh-date" id="dateRow"></div>
+  </div>
+
+  <div class="fb">
+
+    <!-- ОТКРЫТИЕ КАССЫ -->
+    <div class="bl">
+      <div class="bl-title">Открытие кассы</div>
+      <div class="bl-hint">Сверьте фактические деньги в кассе с расчётным остатком</div>
+      <div class="card">
+        <div id="cashConfirmBlock">
+          <div class="cash-confirm">
+            <div class="cash-amount" id="cashOpenAmount">—</div>
+            <div class="cash-question">Сходится?</div>
+            <div class="cash-btns">
+              <button class="cash-btn ok" onclick="cashConfirm(true)">✓ Да</button>
+              <button class="cash-btn no" onclick="cashConfirm(false)">✕ Нет</button>
+            </div>
+          </div>
+        </div>
+        <div id="cashInputBlock" style="display:none">
+          <div class="crow">
+            <div class="crow-label">Факт при открытии</div>
+            <input class="crow-input" id="cashOpen" type="number" inputmode="numeric" placeholder="0" oninput="markTouched(this);calc()" data-required="true">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ТАКСИ ПРОШЛОЙ СМЕНЫ — отдельный блок после открытия кассы -->
+    <div class="bl">
+      <div class="bl-title">Расходы прошлой смены</div>
+      <div class="bl-hint">Введите фактическую сумму такси за прошлую смену по данным агрегатора</div>
+      <div class="card">
+        <div class="crow">
+          <div class="crow-label">Такси прошлой смены — <span id="prevShiftDateLabel" style="color:var(--gold)"></span><span class="note">Введите фактическую сумму по данным агрегатора</span></div>
+          <input class="crow-input" id="taxiCost" type="number" inputmode="numeric" placeholder="0" oninput="markTouched(this);calc()" data-required="true">
+        </div>
+        <div class="alert-row" id="taxiAlert" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- ДОХОДЫ -->
+    <div class="bl">
+      <div class="bl-title">Доходы</div>
+      <div class="card">
+        <div class="crow">
+          <div class="crow-label">Терминал 1</div>
+          <input class="crow-input" id="terminal1" type="number" inputmode="numeric" placeholder="0" oninput="markTouched(this);calc()" data-required="true">
+        </div>
+        <div class="crow">
+          <div class="crow-label">Терминал 2</div>
+          <input class="crow-input" id="terminal2" type="number" inputmode="numeric" placeholder="0" oninput="markTouched(this);calc()" data-required="true">
+        </div>
+        <div class="crow">
+          <div class="crow-label">Нетмонет</div>
+          <input class="crow-input" id="netmonet" type="number" inputmode="numeric" placeholder="0" oninput="markTouched(this);calc()" data-required="true">
+        </div>
+        <div class="crow">
+          <div class="crow-label">Безналичный (итого)</div>
+          <div class="crow-computed hint" id="cardTotal">0 ₽</div>
+        </div>
+        <div class="crow">
+          <div class="crow-label">Наличные</div>
+          <input class="crow-input" id="cashRev" type="number" inputmode="numeric" placeholder="0" oninput="markTouched(this);calc()" data-required="true">
+        </div>
+        <div class="crow">
+          <div class="crow-label">Переводы<span class="note">Приравниваются к наличным в учёте</span></div>
+          <input class="crow-input" id="transRev" type="number" inputmode="numeric" placeholder="0" oninput="markTouched(this);calc()" data-required="true">
+        </div>
+        <div class="crow" style="background:var(--surface2)">
+          <div class="crow-label bold">Итого выручка</div>
+          <div class="crow-computed" id="totalRev">0 ₽</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- РАСХОДЫ -->
+    <div class="bl">
+      <div class="bl-title">Расходы</div>
+      <div class="card">
+        <div class="crow">
+          <div class="crow-label">Мойка</div>
+          <input class="crow-input" id="washCost" type="number" inputmode="numeric" placeholder="0" oninput="markTouched(this);calc()" data-required="true">
+        </div>
+        <div class="crow">
+          <div class="crow-label">Кол-во кальянов</div>
+          <input class="crow-input" id="hookahs" type="number" inputmode="numeric" placeholder="0" oninput="markTouched(this);calc()" data-required="true">
+        </div>
+        <div class="crow">
+          <div class="crow-label">Выплаты за кальяны</div>
+          <div class="crow-computed" id="hookahPay">0 ₽</div>
+        </div>
+        <div class="extra-list" id="extraList"></div>
+        <button class="add-extra" onclick="openExtra()"><span style="font-size:18px;line-height:1">+</span> Добавить доп. расход</button>
+        <div class="crow" style="background:var(--surface2)">
+          <div class="crow-label bold">Итого расходов</div>
+          <div class="crow-computed" id="totalExp">0 ₽</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ИНКАССАЦИЯ -->
+    <div class="bl">
+      <div class="bl-title">Инкассация</div>
+      <div class="bl-hint">Сумма наличных, которые сотрудник изымает из кассы</div>
+      <div class="card">
+        <div class="crow">
+          <div class="crow-label">Сумма инкассации</div>
+          <input class="crow-input" id="collection" type="number" inputmode="numeric" placeholder="0" oninput="markTouched(this);calc()" data-required="true">
+        </div>
+      </div>
+    </div>
+
+    <!-- СВЕРКА КАССЫ -->
+    <div class="bl">
+      <div class="bl-title">Сверка кассы</div>
+      <div class="card">
+        <div class="crow">
+          <div class="crow-label">Остаток наличных в кассе (факт)</div>
+          <input class="crow-input" id="cashActual" type="number" inputmode="numeric" placeholder="0" oninput="markTouched(this);calc();showChangeBlock()" data-required="true">
+        </div>
+        <div class="crow">
+          <div class="crow-label">Сумма переводов</div>
+          <div class="crow-computed hint" id="transCheck">0 ₽</div>
+        </div>
+        <div class="crow">
+          <div class="crow-label">Расчётный остаток</div>
+          <div class="crow-computed" id="cashCalc">—</div>
+        </div>
+        <div class="crow" style="background:var(--surface2)">
+          <div class="crow-label bold">Разница</div>
+          <div class="crow-computed" id="cashDiff">—</div>
+        </div>
+        <div class="alert-row" id="cashAlert"></div>
+      </div>
+    </div>
+
+    <!-- МЕЛОЧЬ -->
+    <div class="bl" id="changeBlock" style="display:none">
+      <div class="card">
+        <div class="crow" style="cursor:pointer" onclick="toggleChange()">
+          <div class="crow-label">🪙 Мелочь в кассе<span class="note">Нажмите чтобы раскрыть</span></div>
+          <div style="color:var(--gold);font-size:18px;padding:14px 0" id="changeArrow">▸</div>
+        </div>
+        <div id="changeFields" style="display:none">
+          <div class="crow">
+            <div class="crow-label">Сумма монет (₽)</div>
+            <input class="crow-input" id="changeAmount" type="number" inputmode="numeric" placeholder="0" oninput="calc()">
+          </div>
+          <div style="padding:10px 16px;font-size:12px;color:var(--dim)">Включается в общий остаток наличных. В таблицу не выводится отдельно.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ОЦЕНКА ДНЯ -->
+    <div class="bl">
+      <div class="bl-title">Оценка дня</div>
+      <div class="plan-card">
+        <div class="plan-head"><span>Показатель</span><span>План</span><span>Факт</span><span>%</span></div>
+        <div class="plan-row"><span>Выручка</span><span id="pl-rev">—</span><span class="val" id="fa-rev">—</span><span id="pc-rev">—</span></div>
+        <div class="plan-row"><span>Наличные</span><span id="pl-cash">—</span><span class="val" id="fa-cash">—</span><span id="pc-cash">—</span></div>
+      </div>
+    </div>
+
+    <!-- ФОТО ЧЕКОВ -->
+    <div class="bl">
+      <div class="bl-title">Фото чеков терминала + закрытие смены</div>
+      <div class="card" style="padding-bottom:0">
+        <div class="photo-area" onclick="document.getElementById('photoReceipts').click()" style="margin:16px 16px 0">
+          <input type="file" id="photoReceipts" accept="image/*" multiple onchange="addPhotos(this,'receipts')">
+          <div class="photo-icon">📄</div>
+          <div class="photo-label">Нажмите, чтобы выбрать <strong>фото</strong></div>
+        </div>
+        <div class="photos-grid" id="photosReceipts"></div>
+        <div style="padding:0 16px 14px;font-size:12px;color:var(--dim)">Чеки терминала безналичной оплаты + чек закрытия смены</div>
+      </div>
+    </div>
+
+
+
+    <!-- SUBMIT -->
+    <div class="submit-wrap">
+      <button class="submit-btn" id="submitBtn" onclick="doSubmit()">ОТПРАВИТЬ ОТЧЁТ</button>
+    </div>
+
+    <div style="text-align:center;padding:8px 0 4px;font-size:12px;color:var(--dim)">
+      <a onclick="openCfg()" style="color:var(--muted);text-decoration:underline;cursor:pointer">⚙ Настройки</a>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ SUCCESS ═══ -->
+<div class="screen" id="successScreen">
+  <div class="s-icon">✓</div>
+  <div class="s-title">Отчёт отправлен!</div>
+  <div class="s-sub" id="sSub"></div>
+  <br><br>
+  <button style="background:var(--gold);color:#0e0e0e;font-family:'Unbounded',sans-serif;font-size:14px;font-weight:700;border:none;border-radius:var(--rs);padding:18px 48px;cursor:pointer;" onclick="location.reload()">Новая смена</button>
+</div>
+
+<!-- ═══ SENDING ═══ -->
+<div id="sendingOverlay">
+  <div style="text-align:center;width:80%;max-width:320px">
+    <div style="font-family:'Unbounded',sans-serif;font-size:13px;color:var(--gold);letter-spacing:.08em;margin-bottom:24px" id="sendStatus">ОТПРАВКА ОТЧЁТА</div>
+    <div style="height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;margin-bottom:16px">
+      <div id="sendProgress" style="height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-light));width:0%;transition:width .4s ease;border-radius:3px"></div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);text-align:left" id="sendSteps"></div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: extra ═══ -->
+<div class="overlay" id="extraOverlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeExtra()">×</button>
+    <div class="modal-title">Доп. расход</div>
+    <div class="field">
+      <div class="field-label">Сумма (₽)</div>
+      <input class="field-input" id="extraAmt" type="number" inputmode="numeric" placeholder="0">
+    </div>
+    <div class="field">
+      <div class="field-label">Комментарий</div>
+      <textarea class="field-input" id="extraCmt" placeholder="Что именно и почему..."></textarea>
+    </div>
+    <button class="modal-btn" onclick="saveExtra()">Добавить</button>
+  </div>
+</div>
+
+<!-- ═══ MODAL: PIN владельца ═══ -->
+<div class="overlay" id="ownerPinModal">
+  <div class="modal" style="text-align:center;padding:32px 24px 48px">
+    <button class="modal-close" onclick="closeOwnerPin()" style="float:right">×</button>
+    <div style="font-family:'Unbounded',sans-serif;font-size:13px;font-weight:600;color:var(--gold);margin-bottom:6px;margin-top:8px">ДОСТУП ЗАКРЫТ</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:24px">Введите PIN владельца</div>
+    <input type="hidden" id="ownerPinBuf" value="">
+    <div class="pin-dots" style="justify-content:center;margin-bottom:28px">
+      <div class="pin-dot" id="opd0"></div>
+      <div class="pin-dot" id="opd1"></div>
+      <div class="pin-dot" id="opd2"></div>
+      <div class="pin-dot" id="opd3"></div>
+    </div>
+    <div class="pin-keypad" style="max-width:260px;margin:0 auto">
+      <button class="pkey" onclick="ownerPk('1')">1</button><button class="pkey" onclick="ownerPk('2')">2</button><button class="pkey" onclick="ownerPk('3')">3</button>
+      <button class="pkey" onclick="ownerPk('4')">4</button><button class="pkey" onclick="ownerPk('5')">5</button><button class="pkey" onclick="ownerPk('6')">6</button>
+      <button class="pkey" onclick="ownerPk('7')">7</button><button class="pkey" onclick="ownerPk('8')">8</button><button class="pkey" onclick="ownerPk('9')">9</button>
+      <button class="pkey" style="visibility:hidden"></button>
+      <button class="pkey" onclick="ownerPk('0')">0</button>
+      <button class="pkey del" onclick="ownerPd()">⌫</button>
+    </div>
+    <div class="pin-err" id="ownerPinErr" style="margin-top:14px"></div>
+    <div style="font-size:11px;color:var(--dim);margin-top:20px">PIN задаётся в ячейке D16 листа «Настройки»</div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: cfg ═══ -->
+<div class="overlay" id="cfgModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeCfg()">×</button>
+    <div class="modal-title">⚙ Настройки руководителя</div>
+
+    <div class="cfg-sec">Telegram</div>
+    <div class="field">
+      <div class="field-label">Bot Token</div>
+      <input class="field-input" id="cfgToken" placeholder="123456:AAF...">
+    </div>
+    <div class="field">
+      <div class="field-label">Chat ID — закрытый (руководитель + фото)</div>
+      <input class="field-input" id="cfgOwner" placeholder="-100...">
+    </div>
+    <div class="field">
+      <div class="field-label">Chat ID — общий (краткая сводка команде)</div>
+      <input class="field-input" id="cfgGeneral" placeholder="-100...">
+    </div>
+
+    <div class="cfg-sec">Ставка за кальян</div>
+    <div class="field">
+      <div class="field-label">Выплата за 1 кальян (₽)</div>
+      <input class="field-input" id="cfgHookahRate" type="number" placeholder="300">
+    </div>
+
+    <div class="cfg-sec">Лимит такси за смену</div>
+    <div class="field">
+      <div class="field-label">Макс. допустимая сумма (₽)</div>
+      <input class="field-input" id="cfgMaxTaxi" type="number" placeholder="0">
+      <div class="field-hint" style="margin-top:6px">Если сумма превышена — будет отмечено в таблице и отчёте. 0 = лимит отключён.</div>
+    </div>
+
+    <div class="cfg-sec">Планы по дням недели</div>
+    <div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;margin-bottom:6px;padding:0 2px">
+      <span style="font-size:10px;color:var(--dim);padding:2px 0">День</span>
+      <span style="font-size:10px;color:var(--dim)">План выручки (₽)</span>
+      <span style="font-size:10px;color:var(--dim)">План наличные (₽)</span>
+    </div>
+    <div id="planGrid"></div>
+
+    <div class="cfg-sec">PIN владельца (для доступа к настройкам)</div>
+    <div class="field">
+      <div class="field-label">PIN-код (4 цифры)</div>
+      <input class="field-input" id="cfgOwnerPin" type="password" maxlength="4" inputmode="numeric" placeholder="0000" style="letter-spacing:.2em;text-align:center;font-size:20px">
+      <div class="field-hint" style="margin-top:6px">Также хранится в ячейке D16 листа «Настройки» в Google Sheets</div>
+    </div>
+
+    <div class="cfg-sec">Сотрудники</div>
+    <div style="display:grid;grid-template-columns:auto 1fr 100px auto;gap:6px;margin-bottom:6px;padding:0 2px">
+      <span style="font-size:10px;color:var(--dim);padding:2px 0">№</span>
+      <span style="font-size:10px;color:var(--dim)">Имя</span>
+      <span style="font-size:10px;color:var(--dim)">PIN (4 цифры)</span>
+      <span></span>
+    </div>
+    <div id="empList"></div>
+    <button class="add-emp" onclick="addEmp()">+ Добавить сотрудника</button>
+
+    <br><br>
+    <button class="modal-btn" onclick="saveCfg()">Сохранить настройки</button>
+  </div>
+</div>
+
+<script>
+const g=id=>document.getElementById(id);
+const gc=k=>{
+  // Apps Script URL берём из вшитой константы если она задана
+  if(k==='sheets-url' && window.APPS_SCRIPT_URL && window.APPS_SCRIPT_URL!=='ВСТАВЬТЕ_URL_СЮДА')
+    return window.APPS_SCRIPT_URL;
+  return localStorage.getItem('e_'+k)||'';
+};
+const sc=(k,v)=>localStorage.setItem('e_'+k,v);
+const num=id=>parseFloat(g(id).value)||0;
+const fmt=n=>n.toLocaleString('ru-RU')+' ₽';
+const getEmps=()=>{try{return JSON.parse(localStorage.getItem('e_emps')||'[]');}catch{return[];}};
+const setEmps=a=>localStorage.setItem('e_emps',JSON.stringify(a));
+
+const NOW=new Date();
+const h=NOW.getHours();
+// Показываем выбор "вчера" с 22:00 до 06:00
+// дата выбирается вручную через иконку
+
+let currentEmp=null;
+let pinBuf='';
+let extras=[];
+let photosReceipts=[];
+let selectedDate=NOW;
+let cashOpenValue=0;
+
+if(!localStorage.getItem('e_emps'))setEmps([{name:'Менеджер 1',pin:'1234'},{name:'Менеджер 2',pin:'5678'}]);
+
+
+// Локальная дата без UTC сдвига
+function localDateStr(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
+}
+const DAYS=['пн','вт','ср','чт','пт','сб','вс'];
+function getDayIndex(d){return(d.getDay()+6)%7;}
+
+// ── PIN ──
+function updateDots(state){
+  for(let i=0;i<4;i++)g('pd'+i).className='pin-dot'+(state==='err'&&i<pinBuf.length?' err':i<pinBuf.length?' filled':'');
+}
+function pk(d){
+  if(pinBuf.length>=4)return;
+  pinBuf+=d;updateDots();g('pinErr').textContent='';
+  if(pinBuf.length===4)setTimeout(checkPin,120);
+}
+function pd(){pinBuf=pinBuf.slice(0,-1);updateDots();g('pinErr').textContent='';}
+function checkPin(){
+  const emps=getEmps();
+  const found=emps.find(e=>e.pin===pinBuf);
+  if(found){currentEmp=found;updateDots();setTimeout(showForm,250);}
+  else{updateDots('err');g('pinErr').textContent='Неверный PIN. Попробуйте снова.';setTimeout(()=>{pinBuf='';updateDots();},900);}
+}
+
+// ── SCREEN ──
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('show'));
+  g(id).classList.add('show');g(id).classList.add('pop');
+  setTimeout(()=>g(id).classList.remove('pop'),400);
+}
+
+// ── FORM ──
+
+function showValidationError(missing) {
+  // Убираем старый баннер если есть
+  const old = g('validationBanner');
+  if (old) old.remove();
+
+  const banner = document.createElement('div');
+  banner.id = 'validationBanner';
+  banner.style.cssText = `
+    position:fixed;bottom:80px;left:16px;right:16px;
+    background:var(--danger-dim);border:1px solid var(--danger);
+    border-radius:var(--rs);padding:12px 16px;z-index:500;
+    animation:pop .2s ease;
+  `;
+  banner.innerHTML = '<div style="font-family:Unbounded,sans-serif;font-size:11px;color:var(--danger);margin-bottom:8px;font-weight:600">⚠ ЗАПОЛНИТЕ ОБЯЗАТЕЛЬНЫЕ ПОЛЯ</div>'
+    + missing.map(m => `<div style="font-size:12px;color:var(--danger);padding:2px 0">· ${m}</div>`).join('');
+
+  document.body.appendChild(banner);
+  setTimeout(() => { if (banner.parentNode) banner.remove(); }, 5000);
+}
+
+function showToast(msg, type){
+  const t=g('toast');
+  t.textContent=msg;
+  t.style.background=type==='error'?'var(--danger)':'var(--success)';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+// ── ВАЛИДАЦИЯ ──
+// Поле считается заполненным только если пользователь ввёл значение вручную
+// (атрибут data-touched="true")
+function markTouched(el) {
+  el.setAttribute('data-touched', 'true');
+  el.style.borderColor = '';
+  validateField(el);
+}
+
+function validateField(el) {
+  const touched = el.getAttribute('data-touched') === 'true';
+  if (!touched) {
+    el.style.borderColor = '';
+    return false;
+  }
+  const val = el.value.trim();
+  if (val === '' || isNaN(parseFloat(val))) {
+    el.style.borderColor = 'var(--danger)';
+    return false;
+  }
+  el.style.borderColor = 'var(--success)';
+  return true;
+}
+
+const REQUIRED_IDS = ['cashOpen','terminal1','terminal2','netmonet','cashRev',
+  'transRev','taxiCost','washCost','hookahs','collection','cashActual'];
+const REQUIRED_LABELS = {
+  cashOpen: 'Открытие кассы (факт)',
+  terminal1: 'Терминал 1', terminal2: 'Терминал 2', netmonet: 'Нетмонет',
+  cashRev: 'Наличные', transRev: 'Переводы',
+  taxiCost: 'Такси', washCost: 'Мойка', hookahs: 'Кол-во кальянов',
+  collection: 'Инкассация', cashActual: 'Остаток наличных в кассе'
+};
+
+function validateAll() {
+  const missing = [];
+  REQUIRED_IDS.forEach(id => {
+    // Пропускаем cashOpen если сотрудник нажал "Да, сходится" (поле авто-заполнено)
+    if (id === 'cashOpen' && g('cashInputBlock').style.display !== 'none') {
+      const el = g(id);
+      if (el.value.trim() === '' || isNaN(parseFloat(el.value))) {
+        el.setAttribute('data-touched', 'true');
+        el.style.borderColor = 'var(--danger)';
+        missing.push(REQUIRED_LABELS[id]);
+        return;
+      }
+    } else if (id === 'cashOpen') {
+      return; // поле скрыто (авто-заполнено при "Да")
+    }
+
+    const el = g(id);
+    if (!el) return;
+    const touched = el.getAttribute('data-touched') === 'true';
+    const val = el.value.trim();
+    if (!touched || val === '' || isNaN(parseFloat(val))) {
+      el.setAttribute('data-touched', 'true');
+      el.style.borderColor = 'var(--danger)';
+      missing.push(REQUIRED_LABELS[id]);
+    }
+  });
+  return missing;
+}
+
+function showChangeBlock(){
+  const el = g('changeBlock');
+  if (el) el.style.display = 'block';
+}
+function toggleChange(){
+  const fields = g('changeFields');
+  const arrow = g('changeArrow');
+  if (!fields) return;
+  const open = fields.style.display !== 'none';
+  fields.style.display = open ? 'none' : 'block';
+  arrow.textContent = open ? '▸' : '▾';
+}
+
+function updatePlan(){
+  const di=getDayIndex(selectedDate);
+  const planR=parseFloat(gc('plan-rev-'+di))||45000;
+  const planC=parseFloat(gc('plan-cash-'+di))||12000;
+  const term1=num('terminal1')||0;
+  const term2=num('terminal2')||0;
+  const netmonet=num('netmonet')||0;
+  const factR=term1+term2+netmonet+num('cashRev')+num('transRev');
+  const factC=num('cashRev')+num('transRev');
+  const pR=planR>0?Math.round(factR/planR*100):0;
+  const pC=planC>0?Math.round(factC/planC*100):0;
+  function bdg(p){
+    if(p>=100)return '<span class="badge ok">✓ Выполнен</span>';
+    if(p>=80) return '<span class="badge mid">~ Близко</span>';
+    return '<span class="badge no">✕ Не выполнен</span>';
+  }
+  const plRevEl=g('pl-rev');
+  const faRevEl=g('fa-rev');
+  const pcRevEl=g('pc-rev');
+  const plCashEl=g('pl-cash');
+  const faCashEl=g('fa-cash');
+  const pcCashEl=g('pc-cash');
+  if(plRevEl)  plRevEl.textContent=(planR/1000).toFixed(0)+'к';
+  if(faRevEl)  faRevEl.textContent=(factR/1000).toFixed(1)+'к';
+  if(pcRevEl)  pcRevEl.innerHTML=bdg(pR);
+  if(plCashEl) plCashEl.textContent=(planC/1000).toFixed(0)+'к';
+  if(faCashEl) faCashEl.textContent=(factC/1000).toFixed(1)+'к';
+  if(pcCashEl) pcCashEl.innerHTML=bdg(pC);
+}
+
+function showForm(){
+  g('fhGreeting').textContent='Привет, '+currentEmp.name+'!';
+  renderDateRow();
+  updatePrevDateLabel();
+  loadLastCashOpen();
+  updatePlan();
+  show('formScreen');
+}
+
+function updatePrevDateLabel(){
+  const el = g('prevShiftDateLabel');
+  if (!el) return;
+  const prev = new Date(selectedDate);
+  prev.setDate(prev.getDate() - 1);
+  const dayNames = ['вс','пн','вт','ср','чт','пт','сб'];
+  el.textContent = prev.toLocaleDateString('ru-RU',{day:'numeric',month:'short'})
+    + ' (' + dayNames[prev.getDay()] + ')';
+}
+
+function renderDateRow(){
+  const row = g('dateRow');
+  const dayNames = ['вс','пн','вт','ср','чт','пт','сб'];
+  const d = selectedDate;
+  const label = d.toLocaleDateString('ru-RU',{day:'numeric',month:'short'})
+    + ' (' + dayNames[d.getDay()] + ')';
+  row.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="date-chip active" style="font-size:10px">${label}</div>
+      <button onclick="openDatePicker()" style="background:none;border:none;cursor:pointer;font-size:18px;line-height:1;padding:2px;color:var(--muted)" title="Выбрать другую дату">📅</button>
+    </div>
+    <input type="date" id="hiddenDateInput" style="display:none"
+      onchange="applyManualDate(this.value)">
+  `;
+}
+
+function openDatePicker(){
+  const input = g('hiddenDateInput');
+  if (!input) return;
+  input.value = localDateStr(selectedDate);
+  // Ограничиваем: нельзя выбрать будущую дату и дату старше 3 дней
+  const maxDate = localDateStr(NOW);
+  const minD = new Date(NOW); minD.setDate(minD.getDate()-3);
+  input.max = maxDate;
+  input.min = localDateStr(minD);
+  input.click();
+}
+
+function applyManualDate(val){
+  if (!val) return;
+  const parts = val.split('-');
+  selectedDate = new Date(Number(parts[0]), Number(parts[1])-1, Number(parts[2]));
+  renderDateRow();
+  updatePrevDateLabel();
+  updatePlan();
+  loadLastCashOpen();
+}
+
+function selectDate(which){
+  if(which==='today')selectedDate=new Date(NOW);
+  else{selectedDate=new Date(NOW);selectedDate.setDate(selectedDate.getDate()-1);}
+  renderDateRow();
+  updatePlan();
+}
+
+async function loadLastCashOpen(){
+  const el = g('cashOpenAmount');
+  const sheetsUrl = gc('sheets-url');
+
+  if (!sheetsUrl) {
+    cashOpenValue = 0;
+    el.textContent = 'Не настроено';
+    el.style.color = 'var(--warn)';
+    return;
+  }
+
+  el.textContent = '⏳ Загрузка...';
+  el.style.color = 'var(--muted)';
+
+  try {
+    const dateParam = localDateStr(selectedDate);
+    console.log('[ЭТНА] Запрос getInitData для даты:', dateParam);
+    const r = await fetch(sheetsUrl + '?action=getInitData&date=' + dateParam);
+
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    console.log('[ЭТНА] Ответ сервера:', JSON.stringify(d));
+
+    // Остаток кассы
+    cashOpenValue = (d.lastCashOpen !== undefined && d.lastCashOpen !== null)
+      ? Number(d.lastCashOpen) : 0;
+
+    if (cashOpenValue > 0) {
+      el.textContent = fmt(cashOpenValue);
+      el.style.color = 'var(--gold)';
+    } else {
+      el.textContent = '0 ₽ (первая смена)';
+      el.style.color = 'var(--muted)';
+    }
+
+    // Планы на день
+    if (d.planRevenue) sc('plan-rev-' + getDayIndex(selectedDate), d.planRevenue);
+    if (d.planCash)    sc('plan-cash-' + getDayIndex(selectedDate), d.planCash);
+
+    // Настройки
+    if (d.hookahRate)  sc('hookah-rate', d.hookahRate);
+    if (d.ownerPin)    sc('owner-pin', String(d.ownerPin));
+    if (d.maxTaxi !== undefined) sc('max-taxi', d.maxTaxi);
+
+    // Telegram — синхронизация для всех устройств
+    if (d.botToken)    { sc('bot-token',    d.botToken);    }
+    if (d.chatOwner)   { sc('chat-owner',   d.chatOwner);   }
+    if (d.chatGeneral) { sc('chat-general', d.chatGeneral); }
+
+    updatePlan();
+
+  } catch(err) {
+    console.error('loadLastCashOpen error:', err);
+    cashOpenValue = 0;
+    el.textContent = '⚠ Ошибка загрузки';
+    el.style.color = 'var(--danger)';
+  }
+}
+async function doSubmit(){
+  // Валидация всех обязательных полей
+  const missing = validateAll();
+  if (missing.length > 0) {
+    // Скроллим к первому незаполненному полю
+    const firstMissingId = REQUIRED_IDS.find(id => {
+      const el = g(id);
+      return el && el.style.borderColor === 'var(--danger)';
+    });
+    if (firstMissingId) {
+      const el = g(firstMissingId);
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.focus();
+    }
+    // Показываем список незаполненных полей
+    showValidationError(missing);
+    return;
+  }
+
+  const btn=g('submitBtn');btn.disabled=true;
+  g('sendingOverlay').classList.add('show');
+
+  // Подсчитываем количество шагов для прогресса
+  const token=gc('bot-token');
+  const chatOwner=gc('chat-owner');
+  const chatGeneral=gc('chat-general');
+  const sheetsUrl=gc('sheets-url');
+
+  const steps = [];
+  if (token && chatGeneral) steps.push({ key: 'short', label: 'Краткая сводка в общий чат', state: 'pending' });
+  if (token && chatOwner)   steps.push({ key: 'full',  label: 'Полный отчёт руководителю', state: 'pending' });
+  if (token && chatOwner && photosReceipts.length) steps.push({ key: 'recPh', label: `Фото чеков (${photosReceipts.length})`, state: 'pending' });
+
+  if (sheetsUrl) steps.push({ key: 'sheets', label: 'Запись в таблицу', state: 'pending' });
+
+  let stepIdx = 0;
+  const totalSteps = steps.length;
+
+  function setStepState(key, state) {
+    const idx = steps.findIndex(s => s.key === key);
+    if (idx !== -1) steps[idx].state = state;
+    const done = steps.filter(s => s.state === 'done').length;
+    const percent = totalSteps > 0 ? Math.round((done / totalSteps) * 100) : 0;
+    updateProgress(percent, 'ОТПРАВКА ОТЧЁТА', steps);
+  }
+
+  updateProgress(0, 'ОТПРАВКА ОТЧЁТА', steps);
+
+
+  const di=getDayIndex(selectedDate);
+  const planR=parseFloat(gc('plan-rev-'+di))||45000;
+  const planC=parseFloat(gc('plan-cash-'+di))||12000;
+
+  const term1=num('terminal1');
+  const term2=num('terminal2');
+  const netmonet=num('netmonet');
+  const cardRev=term1+term2+netmonet;
+  const factR=cardRev+num('cashRev')+num('transRev');
+  const factC=num('cashRev')+num('transRev');
+  const hookahRate=parseFloat(gc('hookah-rate'))||300;
+  const maxTaxi=parseFloat(gc('max-taxi'))||0;
+  const hookahPay=num('hookahs')*hookahRate;
+  const totalE=num('taxiCost')+num('washCost')+hookahPay+totalExtras();
+  // Такси оплачивается по безналу — не вычитаем из наличных в кассе
+  const cashCalc=num('cashOpen')+num('cashRev')+num('transRev')-num('washCost')-hookahPay-totalExtras()-num('collection');
+  const diff=num('cashActual')-cashCalc;
+  const pct=Math.round(factR/planR*100);
+  const icon=pct>=100?'🟢':pct>=80?'🟡':'🔴';
+
+  // ── Форматирование числа ──
+  const fmtR=n=>n.toLocaleString('ru-RU')+' ₽';
+
+  const extraLines=extras.map(e=>`  • ${fmtR(e.amount)}${e.comment?' — '+e.comment:''}`).join('\n');
+  const dayNames=['вс','пн','вт','ср','чт','пт','сб'];
+  const dayName=dayNames[selectedDate.getDay()];
+  const dateStr=selectedDate.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'})+' ('+dayName+')';
+
+  const cashDiffLine=diff===0
+    ?'✅ Касса сходится'
+    :diff>0
+      ?`⚠️ Излишек: ${fmtR(diff)}`
+      :`❌ Недостача: ${fmtR(Math.abs(diff))}`;
+
+  const fullMsg=`*ЭТНА  |  ${dateStr}*
+${currentEmp.name}
+
+━━━ ДОХОДЫ ━━━
+Безнал (итого): ${fmtR(cardRev)}
+Наличные: ${fmtR(num('cashRev'))}
+Переводы: ${fmtR(num('transRev'))}
+
+*Итого выручка: ${fmtR(factR)}*
+
+━━━ РАСХОДЫ (прошлой смены) ━━━
+Такси (прош. смена): ${fmtR(num('taxiCost'))}${maxTaxiLimit>0&&num('taxiCost')>maxTaxiLimit?' ⚠️ ПРЕВЫШЕН ЛИМИТ':''}
+Мойка: ${fmtR(num('washCost'))}
+Кальянов: ${num('hookahs')} × ${hookahRate}₽ = ${fmtR(hookahPay)}${extras.length?'\nДоп. расходы:\n'+extraLines:''}
+
+*Итого расходов: ${fmtR(totalE)}*
+
+━━━ КАССА ━━━
+Инкассация: ${fmtR(num('collection'))}
+Факт: ${fmtR(num('cashActual'))}
+Расчёт: ${fmtR(cashCalc)}
+${cashDiffLine}
+
+━━━ ПЛАН ━━━
+${icon} Выручка: ${fmtR(factR)} / ${fmtR(planR)} (${pct}%)
+${factC>=planC?'✅':'❌'} Наличные: ${fmtR(factC)} / ${fmtR(planC)}`;
+
+  // Планы (planR/planC уже объявлены выше через di)
+  const pctRev  = Math.round(factR/planR*100);
+  const pctCash = Math.round(factC/planC*100);
+
+  function planBar(pct, width=10){
+    const filled = Math.round(Math.min(pct,100)/100*width);
+    return '█'.repeat(filled)+'░'.repeat(width-filled);
+  }
+  function planStatus(pct){
+    if(pct>=100) return '✅ Выполнен';
+    if(pct>=80)  return '🟡 Близко';
+    return '🔴 Не выполнен';
+  }
+
+  const shortMsg=`${icon} *ЭТНА | Итоги смены* | ${dateStr}
+${currentEmp.name}
+
+━━━ ПЛАН ПО ВЫРУЧКЕ ━━━
+${planBar(pctRev)} ${pctRev}%
+Факт: *${fmtR(factR)}*
+План: ${fmtR(planR)}
+${planStatus(pctRev)}
+
+━━━ ПЛАН ПО НАЛИЧНЫМ ━━━
+${planBar(pctCash)} ${pctCash}%
+Факт: *${fmtR(factC)}*
+План: ${fmtR(planC)}
+${planStatus(pctCash)}`; 
+
+  const errors=[];
+
+  // Отправить текст в TG
+  async function tgText(chatId,text){
+    try{
+      const r=await fetch(`https://api.telegram.org/bot${token}/sendMessage`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({chat_id:chatId,text,parse_mode:'Markdown'})
+      });
+      const j=await r.json();
+      if(!j.ok)errors.push('TG: '+j.description);
+    }catch(e){errors.push('TG: '+e.message);}
+  }
+
+  // Отправить группу фото одним сообщением (sendMediaGroup)
+  // spoiler=true — фото скрыты под спойлером (нажать чтобы показать)
+  async function tgPhotos(chatId,files,caption){
+    if(!files.length)return;
+    try{
+      const chunks=[];
+      for(let i=0;i<files.length;i+=10)chunks.push(files.slice(i,i+10));
+      for(let ci=0;ci<chunks.length;ci++){
+        const chunk=chunks[ci];
+        const fd=new FormData();
+        fd.append('chat_id',chatId);
+        const media=[];
+        chunk.forEach((f,i)=>{
+          const key='photo'+i;
+          fd.append(key,f,f.name||`photo_${i}.jpg`);
+          const item={
+            type:'photo',
+            media:'attach://'+key,
+          };
+          if(ci===0&&i===0&&caption){item.caption=caption;}
+          media.push(item);
+        });
+        fd.append('media',JSON.stringify(media));
+        const r=await fetch(`https://api.telegram.org/bot${token}/sendMediaGroup`,{method:'POST',body:fd});
+        const j=await r.json();
+        if(!Array.isArray(j)&&!j.ok)errors.push('TG фото: '+j.description);
+      }
+    }catch(e){errors.push('TG фото: '+e.message);}
+  }
+
+  if(token){
+    if(chatGeneral){
+      setStepState('short', 'active');
+      await tgText(chatGeneral,shortMsg);
+      setStepState('short', 'done');
+    }
+    if(chatOwner){
+      setStepState('full', 'active');
+      await tgText(chatOwner,fullMsg);
+      setStepState('full', 'done');
+
+      if(photosReceipts.length){
+        setStepState('recPh', 'active');
+        await tgPhotos(chatOwner,photosReceipts,'📄 Чеки терминала | '+dateStr);
+        setStepState('recPh', 'done');
+      }
+
+    }
+  }
+
+  // Google Sheets — fetch через Apps Script URL
+  // Google Sheets через Apps Script
+  if (sheetsUrl) {
+    setStepState('sheets', 'active');
+    try {
+      const payload = JSON.stringify({
+        date: localDateStr(selectedDate),
+        employee: currentEmp.name,
+        cashOpen: num('cashOpen'),
+        cashOpenCalc: cashOpenValue,
+        terminal1: term1, terminal2: term2, netmonet, cardRev,
+        cashRev: num('cashRev'), transRev: num('transRev'), totalRev: factR,
+        taxiCost: num('taxiCost'), washCost: num('washCost'),
+        hookahs: num('hookahs'), hookahPay,
+        extras: JSON.stringify(extras), totalExp: totalE,
+          changeAmount: num('changeAmount'),
+        collection: num('collection'), cashActual: num('cashActual'),
+        cashDiff: diff, pct: pct/100
+      });
+      await fetch(sheetsUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: payload
+      });
+      setStepState('sheets', 'done');
+    } catch(e) {
+      console.warn('Sheets fetch error:', e.message);
+      setStepState('sheets', 'done');
+    }
+  }
+
+    updateProgress(100, 'ГОТОВО', steps);
+  await new Promise(r => setTimeout(r, 400));
+  g('sendingOverlay').classList.remove('show');
+  show('successScreen');
+
+  let sub=`Смена ${dateStr}\nСотрудник: ${currentEmp.name}`;
+  if(!token)sub+='\n\n⚙️ Telegram не настроен — зайдите в настройки.';
+  else if(!errors.length)sub+='\n\nОтправлено в Telegram и таблицу ✓';
+  else sub+='\n\n⚠️ '+errors.join('\n');
+  g('sSub').textContent=sub;
+}
+
+// ── CFG ──
+function openCfg(){
+  // Показываем PIN-экран владельца перед настройками
+  g('ownerPinBuf').value='';
+  renderOwnerDots('');
+  g('ownerPinErr').textContent='';
+  g('ownerPinModal').classList.add('show');
+}
+
+function closeCfg(){g('cfgModal').classList.remove('show');}
+function closeOwnerPin(){g('ownerPinModal').classList.remove('show');}
+
+function ownerPk(d){
+  const el=g('ownerPinBuf');
+  if(el.value.length>=4)return;
+  el.value+=d;
+  renderOwnerDots(el.value);
+  g('ownerPinErr').textContent='';
+  if(el.value.length===4)setTimeout(checkOwnerPin,120);
+}
+function ownerPd(){
+  const el=g('ownerPinBuf');
+  el.value=el.value.slice(0,-1);
+  renderOwnerDots(el.value);
+  g('ownerPinErr').textContent='';
+}
+function renderOwnerDots(val,state){
+  for(let i=0;i<4;i++){
+    g('opd'+i).className='pin-dot'+(state==='err'&&i<val.length?' err':i<val.length?' filled':'');
+  }
+}
+
+async function checkOwnerPin(){
+  const entered=g('ownerPinBuf').value;
+  // Пробуем получить PIN из Apps Script / localStorage
+  const savedPin=gc('owner-pin')||'0000';
+  if(entered===savedPin){
+    renderOwnerDots(entered);
+    setTimeout(()=>{
+      closeOwnerPin();
+      openCfgPanel();
+    },250);
+  } else {
+    renderOwnerDots(entered,'err');
+    g('ownerPinErr').textContent='Неверный PIN владельца';
+    setTimeout(()=>{
+      g('ownerPinBuf').value='';
+      renderOwnerDots('');
+    },900);
+  }
+}
+
+async function openCfgPanel(){
+  // Если ещё не синхронизировано — грузим с сервера прямо сейчас
+  const sheetsUrl = gc('sheets-url');
+  if (sheetsUrl && !gc('bot-token')) {
+    try {
+      const r = await fetch(sheetsUrl + '?action=getInitData&date=' + localDateStr(new Date()));
+      const d = await r.json();
+      if (d.botToken)    sc('bot-token',    d.botToken);
+      if (d.chatOwner)   sc('chat-owner',   d.chatOwner);
+      if (d.chatGeneral) sc('chat-general', d.chatGeneral);
+      if (d.ownerPin)    sc('owner-pin',    String(d.ownerPin));
+      if (d.hookahRate)  sc('hookah-rate',  d.hookahRate);
+      if (d.maxTaxi !== undefined) sc('max-taxi', d.maxTaxi);
+    } catch(e) { console.warn('Settings sync failed:', e); }
+  }
+
+  g('cfgToken').value=gc('bot-token');
+  g('cfgOwner').value=gc('chat-owner');
+  g('cfgGeneral').value=gc('chat-general');
+  g('cfgHookahRate').value=gc('hookah-rate')||'300';
+  if(g('cfgMaxTaxi')) g('cfgMaxTaxi').value=gc('max-taxi')||'0';
+  g('cfgOwnerPin').value=gc('owner-pin')||'0000';
+  renderPlanGrid();
+  renderEmpList();
+  g('cfgModal').classList.add('show');
+}
+
+function renderPlanGrid(){
+  const pg=g('planGrid');
+  pg.innerHTML=DAYS.map((d,i)=>`
+    <div class="plan-grid">
+      <span class="plan-day">${d}</span>
+      <input class="field-input" type="number" placeholder="45000" value="${gc('plan-rev-'+i)||''}" oninput="sc('plan-rev-${i}',this.value)" style="font-size:14px;padding:10px 12px">
+      <input class="field-input" type="number" placeholder="12000" value="${gc('plan-cash-'+i)||''}" oninput="sc('plan-cash-${i}',this.value)" style="font-size:14px;padding:10px 12px">
+    </div>
+  `).join('');
+}
+
+function renderEmpList(){
+  const emps=getEmps();
+  g('empList').innerHTML=emps.map((e,i)=>`
+    <div class="emp-row">
+      <span class="emp-num">${i+1}</span>
+      <input class="field-input" placeholder="Имя" value="${e.name}" oninput="updEmp(${i},'name',this.value)" style="font-size:14px;padding:10px 12px">
+      <input class="field-input" placeholder="PIN" value="${e.pin}" maxlength="4" inputmode="numeric" oninput="updEmp(${i},'pin',this.value)" style="font-size:16px;padding:10px 12px;letter-spacing:.18em;text-align:center">
+      <button class="emp-del" onclick="delEmp(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function updEmp(i,field,val){const emps=getEmps();if(emps[i]){emps[i][field]=val;setEmps(emps);}}
+function delEmp(i){const emps=getEmps();emps.splice(i,1);setEmps(emps);renderEmpList();}
+function addEmp(){const emps=getEmps();emps.push({name:'',pin:''});setEmps(emps);renderEmpList();}
+
+async function saveCfg(){
+  // Сохраняем локально
+  sc('bot-token',g('cfgToken').value.trim());
+  sc('chat-owner',g('cfgOwner').value.trim());
+  sc('chat-general',g('cfgGeneral').value.trim());
+  sc('hookah-rate',g('cfgHookahRate').value.trim());
+  if(g('cfgMaxTaxi')) sc('max-taxi',g('cfgMaxTaxi').value.trim());
+  sc('owner-pin',g('cfgOwnerPin').value.trim()||'0000');
+
+  // И отправляем на сервер чтобы все сотрудники получили
+  const sheetsUrl = gc('sheets-url');
+  if (sheetsUrl) {
+    try {
+      await fetch(sheetsUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'saveSettings',
+          botToken:    g('cfgToken').value.trim(),
+          chatOwner:   g('cfgOwner').value.trim(),
+          chatGeneral: g('cfgGeneral').value.trim(),
+          hookahRate:  g('cfgHookahRate').value.trim(),
+          maxTaxi:     g('cfgMaxTaxi') ? g('cfgMaxTaxi').value.trim() : 0,
+          ownerPin:    g('cfgOwnerPin').value.trim() || '0000'
+        })
+      });
+      console.log('Settings saved to server');
+    } catch(e) {
+      console.warn('Server save failed:', e);
+    }
+  }
+  closeCfg();
+  showSavedBanner();
+}
+
+function showSavedBanner(){
+  const old = g('savedBanner');
+  if (old) old.remove();
+  const b = document.createElement('div');
+  b.id = 'savedBanner';
+  b.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--success);border-radius:var(--r);padding:14px 24px;z-index:9999;min-width:260px;text-align:center;animation:pop .25s ease;box-shadow:0 4px 24px rgba(0,0,0,.5);';
+  const time = new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+  b.innerHTML = '<div style="color:var(--success);font-family:Unbounded,sans-serif;font-size:12px;font-weight:600;margin-bottom:6px">✓ НАСТРОЙКИ СОХРАНЕНЫ</div>'
+    + '<div style="color:var(--muted);font-size:11px;margin-bottom:4px">Синхронизировано с Google Таблицей</div>'
+    + '<div style="color:var(--dim);font-size:10px;">' + time + '</div>';
+  document.body.appendChild(b);
+  setTimeout(()=>{ if(b.parentNode) b.remove(); }, 3500);
+}
+
+
+</script>
+<div class="toast" id="toast"></div>
+</body>
+</html>
