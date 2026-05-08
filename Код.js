@@ -354,12 +354,12 @@ function saveReport(data) {
     sheet.getRange(targetRow, 1).setNumberFormat('DD.MM.YYYY');
     sheet.getRange(targetRow, 2).setNumberFormat('@').setHorizontalAlignment('center');
     sheet.getRange(targetRow, 16).setNumberFormat('0').setHorizontalAlignment('center');
-    sheet.getRange(targetRow, 25).setNumberFormat('0.0%').setHorizontalAlignment('right');
+    sheet.getRange(targetRow, 25).setNumberFormat('0%').setHorizontalAlignment('right');
 
-    const RUB = '#,##0.00\\ "₽"';
+    const MONEY = '0';
     [4,5,6,7,8,9,10,11,12,13,14,15,17,18,19,20,21,22,23,24]
       .forEach(c => sheet.getRange(targetRow, c)
-        .setNumberFormat(RUB).setHorizontalAlignment('right'));
+        .setNumberFormat(MONEY).setHorizontalAlignment('right'));
 
     // Цвет разницы
     const diffCell = sheet.getRange(targetRow, 23);
@@ -388,7 +388,7 @@ function saveReport(data) {
           const cellDateStr = Utilities.formatDate(new Date(cellVal), 'GMT+3', 'yyyy-MM-dd');
           if (cellDateStr === prevDateStr) {
             const prevTaxi = sheet.getRange(r, 14).getValue() || 0;
-            sheet.getRange(r, 14).setValue(taxiCost).setNumberFormat('#,##0.00\ "₽"');
+            sheet.getRange(r, 14).setValue(taxiCost).setNumberFormat('0');
             // Аномалия — выделяем красным если превышает лимит
             if (maxTaxi > 0 && taxiCost > maxTaxi) {
               sheet.getRange(r, 14).setBackground('#FDECEA').setFontColor('#E05A4A').setFontWeight('bold');
@@ -909,7 +909,7 @@ function styleYandexFoodColumn(sheet) {
     .setVerticalAlignment('middle');
   const dataRange = sheet.getRange(4, yandexCol, lastRow - 3, 1);
   dataRange
-    .setNumberFormat('#,##0.00\\ "₽"')
+    .setNumberFormat('0')
     .setHorizontalAlignment('right')
     .setVerticalAlignment('middle')
     .setFontFamily('Arial')
@@ -953,16 +953,16 @@ function seedDataCalendar() {
     .setHorizontalAlignment('center');
   sheet.getRange(4, 2, rows.length, 2).setHorizontalAlignment('center');
   sheet.getRange(4, 4, rows.length, 12)
-    .setNumberFormat('#,##0.00\\ "₽"')
+    .setNumberFormat('0')
     .setHorizontalAlignment('right');
   sheet.getRange(4, 16, rows.length, 1)
     .setNumberFormat('0')
     .setHorizontalAlignment('center');
   sheet.getRange(4, 17, rows.length, 8)
-    .setNumberFormat('#,##0.00\\ "₽"')
+    .setNumberFormat('0')
     .setHorizontalAlignment('right');
   sheet.getRange(4, 25, rows.length, 1)
-    .setNumberFormat('0.0%')
+    .setNumberFormat('0%')
     .setHorizontalAlignment('right');
   styleYandexFoodColumn(sheet);
 

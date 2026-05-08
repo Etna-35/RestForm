@@ -55,7 +55,7 @@ No external npm dependencies are currently used.
 - Current Web App URL: `https://script.google.com/macros/s/AKfycbwVBqxidw_gcAlGVIwIUBU5GIfLtzQ5ULk0fJ2VRpbAWdfI0a1eT37J8ASIxuJkeF0jLw/exec`
 - Script ID: `1msQzI7MU3ytVTXrfvXjDhbhIyz7KoOyvROAjugZmunpEyVO7EePFvPCf`
 - Deployment ID: `AKfycbwVBqxidw_gcAlGVIwIUBU5GIfLtzQ5ULk0fJ2VRpbAWdfI0a1eT37J8ASIxuJkeF0jLw`
-- Last known deployed version: `34`.
+- Last known deployed version: `35`.
 - Web app deployment:
   - Execute as: owner / deploying user.
   - Access: anyone with link.
@@ -130,6 +130,11 @@ Current live data skeleton:
 - Column B contains weekday codes (`Пн`, `Вт`, etc.).
 - Report submission should update the row matching the selected date; if no row exists, it may fall back to the first empty row.
 - `ensureDataSheet()` enforces canonical A:Y schema and removes columns after Y on `Данные`.
+- Rows after 2026-08-31 are removed; current `Данные` grid has 126 rows.
+- Hidden by default: D:F `ОТКРЫТИЕ`, N:R `РАСХОДЫ`, T:W `СВЕРКА КАССЫ`.
+- Money columns use whole-number format `0`: no ruble sign, no decimals, no thousands separators.
+- `% выполнения` uses `0%`.
+- Weekend highlighting is conditional formatting on A:B for Friday, Saturday and Sunday.
 
 ### Sheet `Настройки`
 

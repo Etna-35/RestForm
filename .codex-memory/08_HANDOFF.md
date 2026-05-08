@@ -21,8 +21,8 @@ Apps Script:
 ```text
 Script ID: 1msQzI7MU3ytVTXrfvXjDhbhIyz7KoOyvROAjugZmunpEyVO7EePFvPCf
 Deployment ID: AKfycbwVBqxidw_gcAlGVIwIUBU5GIfLtzQ5ULk0fJ2VRpbAWdfI0a1eT37J8ASIxuJkeF0jLw
-Last known version: 34
-Last known description: Codex enforce data sheet schema
+Last known version: 35
+Last known description: Codex simplify sheet money format
 ```
 
 Последний кодовый коммит:
@@ -56,6 +56,10 @@ Sheet in focus: Данные
 - Публичный `seedDataCalendar` HTTP endpoint убран после заполнения таблицы; сама функция осталась как ручная утилита в Apps Script.
 - Дублирующаяся `isLockedPastDateServer` удалена.
 - При submit браузер больше не отправляет Telegram напрямую; отчёты отправляет Apps Script server-side.
+- В `Данные` удалён хвост строк после 31.08.2026.
+- Скрыты колонки D:F, N:R, T:W; ежедневный вид сфокусирован на дате, сотруднике, доходах, инкассации и план/факт.
+- Денежный формат таблицы: целые числа без `₽`, копеек и разделителей.
+- Weekend highlighting на A:B сделан условным форматированием.
 
 ## Текущее состояние Git
 
@@ -89,12 +93,9 @@ M package.json
 
 Сразу после чтения памяти:
 
-1. Провести end-to-end тест на опубликованной форме:
-   - обычная отправка за текущую дату;
-   - ретроввод за старую дату через PIN руководителя;
-   - проверка, что строка нужной даты в `Данные` перезаписалась;
-   - проверка Telegram.
-2. Если тест выявит ошибку, читать live sheet перед правками и исправлять по фактическому состоянию.
+1. Визуально проверить `Данные` после скрытия audit-блоков и форматирования денег.
+2. Провести отправку формы и убедиться, что перезаписанная строка сохраняет формат `0`, без `₽` и копеек.
+3. Если тест выявит ошибку, читать live sheet перед правками и исправлять по фактическому состоянию.
 
 ## Файлы в фокусе
 

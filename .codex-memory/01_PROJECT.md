@@ -48,5 +48,5 @@ MVP / beta. Форма развёрнута на GitHub Pages и подключ�
 - Apps Script Web App URL: `https://script.google.com/macros/s/AKfycbwVBqxidw_gcAlGVIwIUBU5GIfLtzQ5ULk0fJ2VRpbAWdfI0a1eT37J8ASIxuJkeF0jLw/exec`
 - Apps Script Script ID: `1msQzI7MU3ytVTXrfvXjDhbhIyz7KoOyvROAjugZmunpEyVO7EePFvPCf`
 - Apps Script deployment ID: `AKfycbwVBqxidw_gcAlGVIwIUBU5GIfLtzQ5ULk0fJ2VRpbAWdfI0a1eT37J8ASIxuJkeF0jLw`
-- Последний известный deployment: version `34`, описание `Codex enforce data sheet schema`.
+- Последний известный deployment: version `35`, описание `Codex simplify sheet money format`.
 - Telegram bot name / username: `<TODO: уточнить у пользователя>`

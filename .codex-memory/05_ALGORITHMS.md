@@ -52,6 +52,8 @@ L = transRev
 M = factRevenue
 ```
 
+Display rule in Google Sheets: money values are formatted as `0` only. Telegram messages may still include `₽`; the no-ruble rule is for the spreadsheet view.
+
 ## Plan Percent
 
 ```text

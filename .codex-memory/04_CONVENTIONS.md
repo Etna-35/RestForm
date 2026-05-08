@@ -98,6 +98,11 @@ https://script.google.com/macros/s/AKfycbwVBqxidw_gcAlGVIwIUBU5GIfLtzQ5ULk0fJ2VR
 - Header cells must be horizontally and vertically centered; data cells must inherit the table body style, including alternating row backgrounds, borders, font, alignment, and number format.
 - User may edit Google Sheets manually. Before changing sheet structure or formulas, read the live sheet first and treat it as the source of truth.
 - For planned operating periods, prefilled rows with real dates in column A are valid. The form should update the row matching the selected date instead of relying on the first empty row.
+- Daily operator view should focus on `Дата`, `Сотрудник`, `ДОХОДЫ`, `ИНКАССАЦИЯ`, `ПЛАН VS ФАКТ`.
+- Detail/audit sections may be hidden by default: `ОТКРЫТИЕ`, `РАСХОДЫ`, `СВЕРКА КАССЫ`.
+- Google Sheets money values should display as whole numbers only: no `₽`, no decimals, no separators.
+- Friday/Saturday/Sunday date cells in A:B should be highlighted consistently across the full operating period.
+- Month boundaries should remain visually separated with a thick horizontal border.
 
 ## User Preferences
 
