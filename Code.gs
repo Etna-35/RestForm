@@ -224,6 +224,13 @@ function saveReport(data) {
       Number(dateParts[1]) - 1,
       Number(dateParts[2])
     );
+    if (isLockedPastDateServer(shiftDate)) {
+      return {
+        status: 'error',
+        code: 'OLD_DATE_LOCKED',
+        message: 'Правки старше двух дней доступны только через руководителя'
+      };
+    }
 
     const dayCode = getDayCode(data.date);
     const plan    = plans[dayCode] || { revenue: 45000, cash: 12000 };
@@ -565,6 +572,14 @@ function planStatus(pct) {
 
 function escapeTelegramText(value) {
   return String(value || '').replace(/([_*`\[])/g, '\\$1');
+}
+
+function isLockedPastDateServer(shiftDate) {
+  const todayParts = Utilities.formatDate(new Date(), 'GMT+3', 'yyyy-MM-dd').split('-');
+  const todayMsk = new Date(Number(todayParts[0]), Number(todayParts[1]) - 1, Number(todayParts[2]));
+  const shiftOnly = new Date(shiftDate.getFullYear(), shiftDate.getMonth(), shiftDate.getDate());
+  const diffDays = Math.round((todayMsk.getTime() - shiftOnly.getTime()) / 86400000);
+  return diffDays > 2;
 }
 
 // ═══════════════════════════════════════════════════
