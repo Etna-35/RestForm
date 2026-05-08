@@ -22,30 +22,32 @@ main
 codex/dev-setup
 ```
 
-## Найденные проблемы frontend
+## Frontend
 
-В `index.html` есть HTML-обработчики, которые вызывают функции, отсутствующие в текущем файле:
+Исправлено:
 
-- `addPhotos`;
-- `calc`;
-- `cashConfirm`;
-- `closeExtra`;
-- `openExtra`;
-- `saveExtra`.
+- восстановлены функции `addPhotos`, `calc`, `cashConfirm`, `closeExtra`, `openExtra`, `saveExtra`;
+- восстановлены расчеты доходов, расходов, кассы, лимита такси и лимита расхождения;
+- прямые вызовы Telegram API убраны из браузера;
+- `npm run audit:handlers` проходит.
 
-Также в полном Telegram-отчете используется имя `maxTaxiLimit`, но в расчете объявлена переменная `maxTaxi`.
+`maxTaxiLimit` больше не используется в клиентском коде.
 
-## Найденные проблемы безопасности
+## Безопасность
 
-`getInitData` в `Code.gs` возвращает в браузер:
+Исправлено:
 
-- `botToken`;
-- `chatOwner`;
-- `chatGeneral`.
+- `getInitData` больше не возвращает `botToken`, `chatOwner`, `chatGeneral`;
+- `getSettings` больше не возвращает Telegram-секреты;
+- Telegram-сообщения отправляются из `Code.gs`;
+- клиент отправляет в Apps Script один отчетный payload.
 
-`index.html` затем отправляет сообщения напрямую в Telegram API из браузера.
+Остается проверить после deployment:
 
-Целевое исправление: перенести Telegram-отправку в `Code.gs`, а из `getInitData` убрать секреты.
+- запись отчета в живую Google Sheets;
+- краткий Telegram-отчет в общий чат;
+- полный Telegram-отчет руководителю;
+- отправку фото чеков через Apps Script.
 
 ## Состояние таблицы
 
@@ -57,3 +59,12 @@ codex/dev-setup
 
 Это совпадает с ожидаемой структурой проекта.
 
+## Проверки
+
+Локально проходят:
+
+```bash
+npm run check:syntax
+npm run check:apps-script
+npm run audit:handlers
+```

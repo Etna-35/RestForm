@@ -30,8 +30,7 @@ npm run check:syntax
 После правок:
 
 ```bash
-npm run check:syntax
-npm run audit:handlers
+npm run check
 npm run serve
 ```
 
@@ -52,6 +51,10 @@ npm run serve
 Основной файл backend: `Code.gs`.
 
 После правок:
+
+```bash
+npm run check:apps-script
+```
 
 1. Скопировать `Code.gs` в Google Apps Script.
 2. Сохранить проект.
@@ -90,11 +93,9 @@ GitHub Pages должен публиковать `main` автоматическ
 ## 7. Контрольный чеклист перед production
 
 - Нет токенов и секретов в `index.html`.
-- `npm run check:syntax` проходит.
-- `npm run audit:handlers` проходит.
+- `npm run check` проходит.
 - Apps Script развернут новым deployment.
 - `window.APPS_SCRIPT_URL` указывает на актуальный deployment.
 - Тестовый отчет попал в Google Sheets.
 - Telegram получил краткий и полный отчет.
 - Фото чеков отправляются руководителю.
-

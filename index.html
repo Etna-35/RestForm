@@ -505,15 +505,15 @@ textarea.field-input{resize:none;min-height:80px;}
 
     <div class="cfg-sec">Telegram</div>
     <div class="field">
-      <div class="field-label">Bot Token</div>
+      <div class="field-label">Bot Token <span style="color:var(--dim);font-weight:400">(оставьте пустым, чтобы не менять)</span></div>
       <input class="field-input" id="cfgToken" placeholder="123456:AAF...">
     </div>
     <div class="field">
-      <div class="field-label">Chat ID — закрытый (руководитель + фото)</div>
+      <div class="field-label">Chat ID — закрытый <span style="color:var(--dim);font-weight:400">(оставьте пустым, чтобы не менять)</span></div>
       <input class="field-input" id="cfgOwner" placeholder="-100...">
     </div>
     <div class="field">
-      <div class="field-label">Chat ID — общий (краткая сводка команде)</div>
+      <div class="field-label">Chat ID — общий <span style="color:var(--dim);font-weight:400">(оставьте пустым, чтобы не менять)</span></div>
       <input class="field-input" id="cfgGeneral" placeholder="-100...">
     </div>
 
@@ -573,6 +573,7 @@ const num=id=>parseFloat(g(id).value)||0;
 const fmt=n=>n.toLocaleString('ru-RU')+' ₽';
 const getEmps=()=>{try{return JSON.parse(localStorage.getItem('e_emps')||'[]');}catch{return[];}};
 const setEmps=a=>localStorage.setItem('e_emps',JSON.stringify(a));
+['bot-token','chat-owner','chat-general'].forEach(k=>localStorage.removeItem('e_'+k));
 
 const NOW=new Date();
 const h=NOW.getHours();
@@ -728,6 +729,200 @@ function toggleChange(){
   arrow.textContent = open ? '▸' : '▾';
 }
 
+function totalExtras(){
+  return extras.reduce((sum, item)=>sum+(Number(item.amount)||0),0);
+}
+
+function setComputed(id, value, extraClass){
+  const el = g(id);
+  if (!el) return;
+  el.textContent = typeof value === 'number' ? fmt(value) : value;
+  el.className = 'crow-computed' + (extraClass ? ' ' + extraClass : '');
+}
+
+function calc(){
+  const term1 = num('terminal1');
+  const term2 = num('terminal2');
+  const netmonet = num('netmonet');
+  const cardRev = term1 + term2 + netmonet;
+  const cashRev = num('cashRev');
+  const transRev = num('transRev');
+  const totalRev = cardRev + cashRev + transRev;
+  const hookahRate = parseFloat(gc('hookah-rate')) || 300;
+  const hookahPay = num('hookahs') * hookahRate;
+  const extrasSum = totalExtras();
+  const totalExp = num('taxiCost') + num('washCost') + hookahPay + extrasSum;
+  const cashCalc = num('cashOpen') + cashRev + transRev - num('washCost') - hookahPay - extrasSum - num('collection');
+  const diff = num('cashActual') - cashCalc;
+  const diffLimit = parseFloat(gc('cash-diff-limit')) || 500;
+
+  setComputed('cardTotal', cardRev, 'hint');
+  setComputed('totalRev', totalRev);
+  setComputed('hookahPay', hookahPay);
+  setComputed('totalExp', totalExp);
+  setComputed('transCheck', transRev, 'hint');
+  setComputed('cashCalc', cashCalc);
+
+  const diffClass = diff === 0 ? 'success' : Math.abs(diff) <= diffLimit ? '' : 'danger';
+  setComputed('cashDiff', diff, diffClass);
+
+  const cashAlert = g('cashAlert');
+  if (cashAlert) {
+    const cashTouched = g('cashActual').getAttribute('data-touched') === 'true';
+    cashAlert.style.display = cashTouched ? 'block' : 'none';
+    if (diff === 0) {
+      cashAlert.className = 'alert-row success';
+      cashAlert.textContent = 'Касса сходится';
+    } else if (Math.abs(diff) <= diffLimit) {
+      cashAlert.className = 'alert-row warn';
+      cashAlert.textContent = `Расхождение в пределах лимита: ${fmt(diff)}`;
+    } else {
+      cashAlert.className = 'alert-row danger';
+      cashAlert.textContent = diff > 0 ? `Излишек: ${fmt(diff)}` : `Недостача: ${fmt(Math.abs(diff))}`;
+    }
+  }
+
+  const maxTaxi = parseFloat(gc('max-taxi')) || 0;
+  const taxi = num('taxiCost');
+  const taxiAlert = g('taxiAlert');
+  if (taxiAlert) {
+    if (maxTaxi > 0 && taxi > maxTaxi) {
+      taxiAlert.style.display = 'block';
+      taxiAlert.className = 'alert-row danger';
+      taxiAlert.textContent = `Такси выше лимита: ${fmt(taxi)} / ${fmt(maxTaxi)}`;
+    } else {
+      taxiAlert.style.display = 'none';
+      taxiAlert.textContent = '';
+    }
+  }
+
+  updatePlan();
+}
+
+function cashConfirm(ok){
+  const inputBlock = g('cashInputBlock');
+  const input = g('cashOpen');
+  if (ok) {
+    input.value = cashOpenValue;
+    input.setAttribute('data-touched', 'true');
+    input.style.borderColor = 'var(--success)';
+    inputBlock.style.display = 'none';
+    showToast('Открытие кассы подтверждено', 'success');
+  } else {
+    input.value = '';
+    input.removeAttribute('data-touched');
+    input.style.borderColor = '';
+    inputBlock.style.display = 'block';
+    setTimeout(()=>input.focus(), 50);
+  }
+  calc();
+}
+
+function escapeHtml(value){
+  return String(value || '').replace(/[&<>"']/g, ch => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  })[ch]);
+}
+
+function renderExtras(){
+  const list = g('extraList');
+  if (!list) return;
+  if (!extras.length) {
+    list.innerHTML = '';
+    return;
+  }
+  list.innerHTML = extras.map((item, i)=>`
+    <div class="extra-item">
+      <div class="extra-item-info">
+        <div class="extra-item-amount">${fmt(Number(item.amount)||0)}</div>
+        <div class="extra-item-comment">${escapeHtml(item.comment || 'Без комментария')}</div>
+      </div>
+      <button class="extra-item-del" onclick="removeExtra(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function openExtra(){
+  g('extraAmt').value = '';
+  g('extraCmt').value = '';
+  g('extraOverlay').classList.add('show');
+  setTimeout(()=>g('extraAmt').focus(), 80);
+}
+
+function closeExtra(){
+  g('extraOverlay').classList.remove('show');
+}
+
+function saveExtra(){
+  const amount = parseFloat(g('extraAmt').value) || 0;
+  const comment = g('extraCmt').value.trim();
+  if (amount <= 0) {
+    showToast('Укажите сумму расхода', 'error');
+    return;
+  }
+  extras.push({ amount, comment });
+  renderExtras();
+  closeExtra();
+  calc();
+}
+
+function removeExtra(index){
+  extras.splice(index, 1);
+  renderExtras();
+  calc();
+}
+
+function addPhotos(input){
+  const files = Array.from(input.files || []);
+  const tooLarge = files.find(file => file.size > 9 * 1024 * 1024);
+  if (tooLarge) {
+    input.value = '';
+    showToast('Фото больше 9 МБ не загрузится', 'error');
+    return;
+  }
+  photosReceipts.push(...files);
+  input.value = '';
+  renderPhotos();
+}
+
+function renderPhotos(){
+  const grid = g('photosReceipts');
+  if (!grid) return;
+  grid.innerHTML = photosReceipts.map((file, i)=>`
+    <div class="photo-wrap">
+      <img class="photo-thumb" src="${URL.createObjectURL(file)}" alt="">
+      <button class="photo-del" onclick="removePhoto(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function removePhoto(index){
+  photosReceipts.splice(index, 1);
+  renderPhotos();
+}
+
+function updateProgress(percent, title, steps){
+  g('sendProgress').style.width = Math.max(0, Math.min(100, percent)) + '%';
+  g('sendStatus').textContent = title;
+  g('sendSteps').innerHTML = (steps || []).map(step => {
+    const mark = step.state === 'done' ? '✓' : step.state === 'active' ? '…' : '•';
+    return `<div style="padding:3px 0;color:${step.state === 'done' ? 'var(--success)' : 'var(--muted)'}">${mark} ${escapeHtml(step.label)}</div>`;
+  }).join('');
+}
+
+function fileToDataUrl(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = () => resolve({
+      name: file.name || 'photo.jpg',
+      type: file.type || 'image/jpeg',
+      dataUrl: reader.result
+    });
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 function updatePlan(){
   const di=getDayIndex(selectedDate);
   const planR=parseFloat(gc('plan-rev-'+di))||45000;
@@ -864,12 +1059,8 @@ async function loadLastCashOpen(){
     // Настройки
     if (d.hookahRate)  sc('hookah-rate', d.hookahRate);
     if (d.ownerPin)    sc('owner-pin', String(d.ownerPin));
+    if (d.cashDiffLimit !== undefined) sc('cash-diff-limit', d.cashDiffLimit);
     if (d.maxTaxi !== undefined) sc('max-taxi', d.maxTaxi);
-
-    // Telegram — синхронизация для всех устройств
-    if (d.botToken)    { sc('bot-token',    d.botToken);    }
-    if (d.chatOwner)   { sc('chat-owner',   d.chatOwner);   }
-    if (d.chatGeneral) { sc('chat-general', d.chatGeneral); }
 
     updatePlan();
 
@@ -901,23 +1092,20 @@ async function doSubmit(){
 
   const btn=g('submitBtn');btn.disabled=true;
   g('sendingOverlay').classList.add('show');
-
-  // Подсчитываем количество шагов для прогресса
-  const token=gc('bot-token');
-  const chatOwner=gc('chat-owner');
-  const chatGeneral=gc('chat-general');
   const sheetsUrl=gc('sheets-url');
+  if (!sheetsUrl) {
+    g('sendingOverlay').classList.remove('show');
+    btn.disabled = false;
+    showToast('Apps Script URL не настроен', 'error');
+    return;
+  }
 
-  const steps = [];
-  if (token && chatGeneral) steps.push({ key: 'short', label: 'Краткая сводка в общий чат', state: 'pending' });
-  if (token && chatOwner)   steps.push({ key: 'full',  label: 'Полный отчёт руководителю', state: 'pending' });
-  if (token && chatOwner && photosReceipts.length) steps.push({ key: 'recPh', label: `Фото чеков (${photosReceipts.length})`, state: 'pending' });
-
-  if (sheetsUrl) steps.push({ key: 'sheets', label: 'Запись в таблицу', state: 'pending' });
-
-  let stepIdx = 0;
+  const steps = [
+    { key: 'prepare', label: 'Подготовка отчёта', state: 'pending' },
+    { key: 'photos', label: `Подготовка фото (${photosReceipts.length})`, state: photosReceipts.length ? 'pending' : 'done' },
+    { key: 'server', label: 'Отправка в таблицу и Telegram', state: 'pending' }
+  ];
   const totalSteps = steps.length;
-
   function setStepState(key, state) {
     const idx = steps.findIndex(s => s.key === key);
     if (idx !== -1) steps[idx].state = state;
@@ -947,184 +1135,58 @@ async function doSubmit(){
   const cashCalc=num('cashOpen')+num('cashRev')+num('transRev')-num('washCost')-hookahPay-totalExtras()-num('collection');
   const diff=num('cashActual')-cashCalc;
   const pct=Math.round(factR/planR*100);
-  const icon=pct>=100?'🟢':pct>=80?'🟡':'🔴';
-
-  // ── Форматирование числа ──
-  const fmtR=n=>n.toLocaleString('ru-RU')+' ₽';
-
-  const extraLines=extras.map(e=>`  • ${fmtR(e.amount)}${e.comment?' — '+e.comment:''}`).join('\n');
   const dayNames=['вс','пн','вт','ср','чт','пт','сб'];
   const dayName=dayNames[selectedDate.getDay()];
   const dateStr=selectedDate.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'})+' ('+dayName+')';
+  setStepState('prepare', 'active');
 
-  const cashDiffLine=diff===0
-    ?'✅ Касса сходится'
-    :diff>0
-      ?`⚠️ Излишек: ${fmtR(diff)}`
-      :`❌ Недостача: ${fmtR(Math.abs(diff))}`;
-
-  const fullMsg=`*ЭТНА  |  ${dateStr}*
-${currentEmp.name}
-
-━━━ ДОХОДЫ ━━━
-Безнал (итого): ${fmtR(cardRev)}
-Наличные: ${fmtR(num('cashRev'))}
-Переводы: ${fmtR(num('transRev'))}
-
-*Итого выручка: ${fmtR(factR)}*
-
-━━━ РАСХОДЫ (прошлой смены) ━━━
-Такси (прош. смена): ${fmtR(num('taxiCost'))}${maxTaxiLimit>0&&num('taxiCost')>maxTaxiLimit?' ⚠️ ПРЕВЫШЕН ЛИМИТ':''}
-Мойка: ${fmtR(num('washCost'))}
-Кальянов: ${num('hookahs')} × ${hookahRate}₽ = ${fmtR(hookahPay)}${extras.length?'\nДоп. расходы:\n'+extraLines:''}
-
-*Итого расходов: ${fmtR(totalE)}*
-
-━━━ КАССА ━━━
-Инкассация: ${fmtR(num('collection'))}
-Факт: ${fmtR(num('cashActual'))}
-Расчёт: ${fmtR(cashCalc)}
-${cashDiffLine}
-
-━━━ ПЛАН ━━━
-${icon} Выручка: ${fmtR(factR)} / ${fmtR(planR)} (${pct}%)
-${factC>=planC?'✅':'❌'} Наличные: ${fmtR(factC)} / ${fmtR(planC)}`;
-
-  // Планы (planR/planC уже объявлены выше через di)
-  const pctRev  = Math.round(factR/planR*100);
-  const pctCash = Math.round(factC/planC*100);
-
-  function planBar(pct, width=10){
-    const filled = Math.round(Math.min(pct,100)/100*width);
-    return '█'.repeat(filled)+'░'.repeat(width-filled);
-  }
-  function planStatus(pct){
-    if(pct>=100) return '✅ Выполнен';
-    if(pct>=80)  return '🟡 Близко';
-    return '🔴 Не выполнен';
-  }
-
-  const shortMsg=`${icon} *ЭТНА | Итоги смены* | ${dateStr}
-${currentEmp.name}
-
-━━━ ПЛАН ПО ВЫРУЧКЕ ━━━
-${planBar(pctRev)} ${pctRev}%
-Факт: *${fmtR(factR)}*
-План: ${fmtR(planR)}
-${planStatus(pctRev)}
-
-━━━ ПЛАН ПО НАЛИЧНЫМ ━━━
-${planBar(pctCash)} ${pctCash}%
-Факт: *${fmtR(factC)}*
-План: ${fmtR(planC)}
-${planStatus(pctCash)}`; 
-
-  const errors=[];
-
-  // Отправить текст в TG
-  async function tgText(chatId,text){
-    try{
-      const r=await fetch(`https://api.telegram.org/bot${token}/sendMessage`,{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({chat_id:chatId,text,parse_mode:'Markdown'})
-      });
-      const j=await r.json();
-      if(!j.ok)errors.push('TG: '+j.description);
-    }catch(e){errors.push('TG: '+e.message);}
-  }
-
-  // Отправить группу фото одним сообщением (sendMediaGroup)
-  // spoiler=true — фото скрыты под спойлером (нажать чтобы показать)
-  async function tgPhotos(chatId,files,caption){
-    if(!files.length)return;
-    try{
-      const chunks=[];
-      for(let i=0;i<files.length;i+=10)chunks.push(files.slice(i,i+10));
-      for(let ci=0;ci<chunks.length;ci++){
-        const chunk=chunks[ci];
-        const fd=new FormData();
-        fd.append('chat_id',chatId);
-        const media=[];
-        chunk.forEach((f,i)=>{
-          const key='photo'+i;
-          fd.append(key,f,f.name||`photo_${i}.jpg`);
-          const item={
-            type:'photo',
-            media:'attach://'+key,
-          };
-          if(ci===0&&i===0&&caption){item.caption=caption;}
-          media.push(item);
-        });
-        fd.append('media',JSON.stringify(media));
-        const r=await fetch(`https://api.telegram.org/bot${token}/sendMediaGroup`,{method:'POST',body:fd});
-        const j=await r.json();
-        if(!Array.isArray(j)&&!j.ok)errors.push('TG фото: '+j.description);
-      }
-    }catch(e){errors.push('TG фото: '+e.message);}
-  }
-
-  if(token){
-    if(chatGeneral){
-      setStepState('short', 'active');
-      await tgText(chatGeneral,shortMsg);
-      setStepState('short', 'done');
+  try {
+    let photos = [];
+    if (photosReceipts.length) {
+      setStepState('prepare', 'done');
+      setStepState('photos', 'active');
+      photos = await Promise.all(photosReceipts.map(fileToDataUrl));
+      setStepState('photos', 'done');
+    } else {
+      setStepState('prepare', 'done');
     }
-    if(chatOwner){
-      setStepState('full', 'active');
-      await tgText(chatOwner,fullMsg);
-      setStepState('full', 'done');
 
-      if(photosReceipts.length){
-        setStepState('recPh', 'active');
-        await tgPhotos(chatOwner,photosReceipts,'📄 Чеки терминала | '+dateStr);
-        setStepState('recPh', 'done');
-      }
+    const payload = JSON.stringify({
+      date: localDateStr(selectedDate),
+      employee: currentEmp.name,
+      cashOpen: num('cashOpen'),
+      cashOpenCalc: cashOpenValue,
+      terminal1: term1, terminal2: term2, netmonet, cardRev,
+      cashRev: num('cashRev'), transRev: num('transRev'), totalRev: factR,
+      taxiCost: num('taxiCost'), washCost: num('washCost'),
+      hookahs: num('hookahs'), hookahPay,
+      extras: JSON.stringify(extras), totalExp: totalE,
+      changeAmount: num('changeAmount'),
+      collection: num('collection'), cashActual: num('cashActual'),
+      cashCalc, cashDiff: diff, pct: pct/100,
+      planRevenue: planR, planCash: planC,
+      photos
+    });
 
-    }
-  }
-
-  // Google Sheets — fetch через Apps Script URL
-  // Google Sheets через Apps Script
-  if (sheetsUrl) {
-    setStepState('sheets', 'active');
-    try {
-      const payload = JSON.stringify({
-        date: localDateStr(selectedDate),
-        employee: currentEmp.name,
-        cashOpen: num('cashOpen'),
-        cashOpenCalc: cashOpenValue,
-        terminal1: term1, terminal2: term2, netmonet, cardRev,
-        cashRev: num('cashRev'), transRev: num('transRev'), totalRev: factR,
-        taxiCost: num('taxiCost'), washCost: num('washCost'),
-        hookahs: num('hookahs'), hookahPay,
-        extras: JSON.stringify(extras), totalExp: totalE,
-          changeAmount: num('changeAmount'),
-        collection: num('collection'), cashActual: num('cashActual'),
-        cashDiff: diff, pct: pct/100
-      });
-      await fetch(sheetsUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: payload
-      });
-      setStepState('sheets', 'done');
-    } catch(e) {
-      console.warn('Sheets fetch error:', e.message);
-      setStepState('sheets', 'done');
-    }
-  }
-
+    setStepState('server', 'active');
+    await fetch(sheetsUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: payload
+    });
+    setStepState('server', 'done');
     updateProgress(100, 'ГОТОВО', steps);
-  await new Promise(r => setTimeout(r, 400));
-  g('sendingOverlay').classList.remove('show');
-  show('successScreen');
-
-  let sub=`Смена ${dateStr}\nСотрудник: ${currentEmp.name}`;
-  if(!token)sub+='\n\n⚙️ Telegram не настроен — зайдите в настройки.';
-  else if(!errors.length)sub+='\n\nОтправлено в Telegram и таблицу ✓';
-  else sub+='\n\n⚠️ '+errors.join('\n');
-  g('sSub').textContent=sub;
+    await new Promise(r => setTimeout(r, 400));
+    g('sendingOverlay').classList.remove('show');
+    show('successScreen');
+    g('sSub').textContent=`Смена ${dateStr}\nСотрудник: ${currentEmp.name}\n\nОтчёт передан в Apps Script. Таблица и Telegram обрабатываются на сервере.`;
+  } catch(e) {
+    console.warn('Submit failed:', e.message);
+    g('sendingOverlay').classList.remove('show');
+    btn.disabled = false;
+    showToast('Не удалось отправить отчёт', 'error');
+  }
 }
 
 // ── CFG ──
@@ -1182,22 +1244,20 @@ async function checkOwnerPin(){
 async function openCfgPanel(){
   // Если ещё не синхронизировано — грузим с сервера прямо сейчас
   const sheetsUrl = gc('sheets-url');
-  if (sheetsUrl && !gc('bot-token')) {
+  if (sheetsUrl) {
     try {
       const r = await fetch(sheetsUrl + '?action=getInitData&date=' + localDateStr(new Date()));
       const d = await r.json();
-      if (d.botToken)    sc('bot-token',    d.botToken);
-      if (d.chatOwner)   sc('chat-owner',   d.chatOwner);
-      if (d.chatGeneral) sc('chat-general', d.chatGeneral);
       if (d.ownerPin)    sc('owner-pin',    String(d.ownerPin));
       if (d.hookahRate)  sc('hookah-rate',  d.hookahRate);
+      if (d.cashDiffLimit !== undefined) sc('cash-diff-limit', d.cashDiffLimit);
       if (d.maxTaxi !== undefined) sc('max-taxi', d.maxTaxi);
     } catch(e) { console.warn('Settings sync failed:', e); }
   }
 
-  g('cfgToken').value=gc('bot-token');
-  g('cfgOwner').value=gc('chat-owner');
-  g('cfgGeneral').value=gc('chat-general');
+  g('cfgToken').value='';
+  g('cfgOwner').value='';
+  g('cfgGeneral').value='';
   g('cfgHookahRate').value=gc('hookah-rate')||'300';
   if(g('cfgMaxTaxi')) g('cfgMaxTaxi').value=gc('max-taxi')||'0';
   g('cfgOwnerPin').value=gc('owner-pin')||'0000';
@@ -1235,9 +1295,6 @@ function addEmp(){const emps=getEmps();emps.push({name:'',pin:''});setEmps(emps)
 
 async function saveCfg(){
   // Сохраняем локально
-  sc('bot-token',g('cfgToken').value.trim());
-  sc('chat-owner',g('cfgOwner').value.trim());
-  sc('chat-general',g('cfgGeneral').value.trim());
   sc('hookah-rate',g('cfgHookahRate').value.trim());
   if(g('cfgMaxTaxi')) sc('max-taxi',g('cfgMaxTaxi').value.trim());
   sc('owner-pin',g('cfgOwnerPin').value.trim()||'0000');
@@ -1246,19 +1303,24 @@ async function saveCfg(){
   const sheetsUrl = gc('sheets-url');
   if (sheetsUrl) {
     try {
+      const payload = {
+        action: 'saveSettings',
+        hookahRate:  g('cfgHookahRate').value.trim(),
+        maxTaxi:     g('cfgMaxTaxi') ? g('cfgMaxTaxi').value.trim() : 0,
+        ownerPin:    g('cfgOwnerPin').value.trim() || '0000'
+      };
+      const tokenValue = g('cfgToken').value.trim();
+      const ownerValue = g('cfgOwner').value.trim();
+      const generalValue = g('cfgGeneral').value.trim();
+      if (tokenValue) payload.botToken = tokenValue;
+      if (ownerValue) payload.chatOwner = ownerValue;
+      if (generalValue) payload.chatGeneral = generalValue;
+
       await fetch(sheetsUrl, {
         method: 'POST',
         mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'saveSettings',
-          botToken:    g('cfgToken').value.trim(),
-          chatOwner:   g('cfgOwner').value.trim(),
-          chatGeneral: g('cfgGeneral').value.trim(),
-          hookahRate:  g('cfgHookahRate').value.trim(),
-          maxTaxi:     g('cfgMaxTaxi') ? g('cfgMaxTaxi').value.trim() : 0,
-          ownerPin:    g('cfgOwnerPin').value.trim() || '0000'
-        })
+        body: JSON.stringify(payload)
       });
       console.log('Settings saved to server');
     } catch(e) {

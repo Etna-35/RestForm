@@ -64,6 +64,8 @@ index.html -> Apps Script -> Telegram API
              Apps Script -> Google Sheets
 ```
 
+Текущая ветка уже использует эту схему: браузер отправляет отчет в Apps Script, а `Code.gs` отправляет Telegram-сообщения и фото.
+
 Не рекомендуется:
 
 ```text
@@ -82,5 +84,4 @@ index.html -> Telegram API
 - приватные PIN и пароли;
 - `.env`.
 
-Для Telegram настроек предпочтительно использовать `PropertiesService` в Apps Script или защищенный серверный слой. Если настройки остаются в Google Sheets, `getInitData` не должен отдавать `botToken` в браузер.
-
+Для Telegram настроек предпочтительно использовать `PropertiesService` в Apps Script или защищенный серверный слой. Сейчас настройки читаются из листа `Настройки`, но `getInitData` и `getSettings` не отдают `botToken`, `chatOwner`, `chatGeneral` в браузер.
