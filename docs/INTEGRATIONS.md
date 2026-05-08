@@ -55,6 +55,17 @@ https://docs.google.com/spreadsheets/d/13xJDLf_cLcYoTful-1yZiszmgbXr5AlWIQB392pE
 
 `Code.gs` сейчас использует `SpreadsheetApp.getActiveSpreadsheet()`, значит Apps Script должен быть привязан к нужной таблице.
 
+Бизнес-настройки централизованно читаются из листа `Настройки`:
+
+- планы по дням;
+- ставка кальяна;
+- лимит расхождения;
+- лимит такси;
+- PIN руководителя;
+- сотрудники и их PIN.
+
+Форма обновляет настройки при открытии, при возврате вкладки в фокус и раз в 6 часов.
+
 ## Telegram
 
 Рекомендуемая целевая схема:
@@ -84,4 +95,4 @@ index.html -> Telegram API
 - приватные PIN и пароли;
 - `.env`.
 
-Для Telegram настроек предпочтительно использовать `PropertiesService` в Apps Script или защищенный серверный слой. Сейчас настройки читаются из листа `Настройки`, но `getInitData` и `getSettings` не отдают `botToken`, `chatOwner`, `chatGeneral` в браузер.
+Telegram-секреты сохраняются в `PropertiesService` Apps Script. `getInitData` и `getSettings` не отдают `botToken`, `chatOwner`, `chatGeneral` в браузер.

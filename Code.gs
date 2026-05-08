@@ -72,9 +72,11 @@ function doGet(e) {
         const params = getParams(ss);
         return jsonResponse({
           plans,
+          employees: getEmployeesFromSettings(ss),
           hookahRate: params.hookahRate,
           cashDiffLimit: params.cashDiffLimit,
           lateHour: params.lateHour,
+          ownerName: params.ownerName,
           ownerPin: params.ownerPin,
           maxTaxi: params.maxTaxi,
           telegramConfigured: Boolean(params.botToken && (params.chatOwner || params.chatGeneral))
@@ -191,9 +193,13 @@ function getInitData(dateStr) {
     lastCashOpen:  lastCash,
     planRevenue:   plan.revenue,
     planCash:      plan.cash,
+    plans:         plans,
+    employees:     getEmployeesFromSettings(ss),
     hookahRate:    params.hookahRate,
     cashDiffLimit: params.cashDiffLimit,
+    lateHour:      params.lateHour,
     maxTaxi:       params.maxTaxi,
+    ownerName:     params.ownerName,
     ownerPin:      params.ownerPin,
     telegramConfigured: Boolean(params.botToken && (params.chatOwner || params.chatGeneral)),
     dayCode:       dayCode
@@ -582,6 +588,92 @@ function getPlansFromSettings(ss) {
   return plans;
 }
 
+function getDefaultEmployees() {
+  return [
+    { name: 'Даня', pin: '3113' },
+    { name: 'Элина', pin: '7407' }
+  ];
+}
+
+function getEmployeesFromSettings(ss) {
+  const sheet = ss.getSheetByName('Настройки');
+  if (!sheet) return getDefaultEmployees();
+
+  const employees = [];
+  const startRow = 24;
+  const rowCount = 30;
+  const values = sheet.getRange(startRow, 1, rowCount, 3).getValues();
+
+  values.forEach(row => {
+    const name = String(row[1] || '').trim();
+    const pin = String(row[2] || '').trim();
+    if (name && pin) employees.push({ name, pin });
+  });
+
+  if (employees.length) return employees;
+
+  const defaults = getDefaultEmployees();
+  saveEmployeesToSettings(ss, defaults);
+  return defaults;
+}
+
+function saveEmployeesToSettings(ss, employees) {
+  const sheet = ss.getSheetByName('Настройки');
+  if (!sheet) return;
+
+  const startRow = 24;
+  const rowCount = 30;
+  sheet.getRange(startRow - 1, 1, 1, 3).setValues([['№', 'Сотрудник', 'PIN']]);
+  sheet.getRange(startRow - 1, 1, 1, 3).setFontWeight('bold').setBackground('#F0E4CC');
+  sheet.getRange(startRow, 1, rowCount, 3).clearContent();
+
+  const rows = (employees || [])
+    .filter(emp => emp && String(emp.name || '').trim() && String(emp.pin || '').trim())
+    .slice(0, rowCount)
+    .map((emp, index) => [index + 1, String(emp.name).trim(), String(emp.pin).trim()]);
+
+  if (rows.length) sheet.getRange(startRow, 1, rows.length, 3).setValues(rows);
+}
+
+function setupDefaultSettings() {
+  const ss = getSpreadsheet();
+  const sheet = ss.getSheetByName('Настройки');
+  if (!sheet) return { status: 'error', message: 'Лист "Настройки" не найден' };
+
+  sheet.getRange(16, 3).setValue('Юра');
+  sheet.getRange(16, 4).setValue('1461');
+  saveEmployeesToSettings(ss, getDefaultEmployees());
+
+  return {
+    status: 'success',
+    ownerName: 'Юра',
+    ownerPin: '1461',
+    employees: getDefaultEmployees()
+  };
+}
+
+function getScriptSecrets() {
+  const props = PropertiesService.getScriptProperties();
+  return {
+    botToken: props.getProperty('TELEGRAM_BOT_TOKEN') || '',
+    chatOwner: props.getProperty('TELEGRAM_CHAT_OWNER') || '',
+    chatGeneral: props.getProperty('TELEGRAM_CHAT_GENERAL') || ''
+  };
+}
+
+function saveScriptSecrets(data) {
+  const props = PropertiesService.getScriptProperties();
+  if (data.botToken !== undefined && String(data.botToken || '').trim()) {
+    props.setProperty('TELEGRAM_BOT_TOKEN', String(data.botToken).trim());
+  }
+  if (data.chatOwner !== undefined && String(data.chatOwner || '').trim()) {
+    props.setProperty('TELEGRAM_CHAT_OWNER', String(data.chatOwner).trim());
+  }
+  if (data.chatGeneral !== undefined && String(data.chatGeneral || '').trim()) {
+    props.setProperty('TELEGRAM_CHAT_GENERAL', String(data.chatGeneral).trim());
+  }
+}
+
 
 
 /**
@@ -595,11 +687,12 @@ function saveSettings(data) {
     if (!sheet) return { status: 'error', message: 'Лист "Настройки" не найден' };
 
     if (data.hookahRate !== undefined)  sheet.getRange(13, 4).setValue(Number(data.hookahRate) || 300);
-    if (data.ownerPin !== undefined)    sheet.getRange(16, 4).setValue(String(data.ownerPin || '0000'));
+    if (data.cashDiffLimit !== undefined) sheet.getRange(14, 4).setValue(Number(data.cashDiffLimit) || 500);
+    if (data.lateHour !== undefined)    sheet.getRange(15, 4).setValue(Number(data.lateHour) || 6);
+    if (data.ownerName !== undefined)   sheet.getRange(16, 3).setValue(String(data.ownerName || 'Юра'));
+    if (data.ownerPin !== undefined)    sheet.getRange(16, 4).setValue(String(data.ownerPin || '1461'));
     if (data.maxTaxi !== undefined)     sheet.getRange(20, 4).setValue(Number(data.maxTaxi) || 0);
-    if (data.botToken !== undefined)    sheet.getRange(17, 4).setValue(String(data.botToken || ''));
-    if (data.chatOwner !== undefined)   sheet.getRange(18, 4).setValue(String(data.chatOwner || ''));
-    if (data.chatGeneral !== undefined) sheet.getRange(19, 4).setValue(String(data.chatGeneral || ''));
+    saveScriptSecrets(data);
 
     // Планы по дням (если переданы)
     if (data.plans) {
@@ -613,6 +706,10 @@ function saveSettings(data) {
       });
     }
 
+    if (data.employees) {
+      saveEmployeesToSettings(ss, data.employees);
+    }
+
     return { status: 'success' };
   } catch (err) {
     return { status: 'error', message: err.toString() };
@@ -621,15 +718,23 @@ function saveSettings(data) {
 
 function getParams(ss) {
   const sheet = ss.getSheetByName('Настройки');
-  if (!sheet) return { hookahRate: 300, cashDiffLimit: 500, lateHour: 6, ownerPin: '0000' };
+  const secrets = getScriptSecrets();
+  if (!sheet) return { hookahRate: 300, cashDiffLimit: 500, lateHour: 6, ownerName: 'Юра', ownerPin: '1461', ...secrets };
+
+  const ownerName = String(sheet.getRange(16, 3).getValue() || '').trim() || 'Юра';
+  const ownerPin = String(sheet.getRange(16, 4).getValue() || '').trim() || '1461';
+  if (!String(sheet.getRange(16, 4).getValue() || '').trim()) sheet.getRange(16, 4).setValue(ownerPin);
+  if (!String(sheet.getRange(16, 3).getValue() || '').trim()) sheet.getRange(16, 3).setValue(ownerName);
+
   return {
     hookahRate:    Number(sheet.getRange(13, 4).getValue()) || 300,
     cashDiffLimit: Number(sheet.getRange(14, 4).getValue()) || 500,
     lateHour:      Number(sheet.getRange(15, 4).getValue()) || 6,
-    ownerPin:      String(sheet.getRange(16, 4).getValue() || '0000'),
-    botToken:      String(sheet.getRange(17, 4).getValue() || ''),
-    chatOwner:     String(sheet.getRange(18, 4).getValue() || ''),
-    chatGeneral:   String(sheet.getRange(19, 4).getValue() || ''),
+    ownerName:     ownerName,
+    ownerPin:      ownerPin,
+    botToken:      secrets.botToken || String(sheet.getRange(17, 4).getValue() || ''),
+    chatOwner:     secrets.chatOwner || String(sheet.getRange(18, 4).getValue() || ''),
+    chatGeneral:   secrets.chatGeneral || String(sheet.getRange(19, 4).getValue() || ''),
     maxTaxi:       Number(sheet.getRange(20, 4).getValue()) || 0,
   };
 }

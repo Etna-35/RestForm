@@ -541,7 +541,7 @@ textarea.field-input{resize:none;min-height:80px;}
     <div class="cfg-sec">PIN владельца (для доступа к настройкам)</div>
     <div class="field">
       <div class="field-label">PIN-код (4 цифры)</div>
-      <input class="field-input" id="cfgOwnerPin" type="password" maxlength="4" inputmode="numeric" placeholder="0000" style="letter-spacing:.2em;text-align:center;font-size:20px">
+      <input class="field-input" id="cfgOwnerPin" type="password" maxlength="4" inputmode="numeric" placeholder="1461" style="letter-spacing:.2em;text-align:center;font-size:20px">
       <div class="field-hint" style="margin-top:6px">Также хранится в ячейке D16 листа «Настройки» в Google Sheets</div>
     </div>
 
@@ -574,6 +574,8 @@ const fmt=n=>n.toLocaleString('ru-RU')+' ₽';
 const getEmps=()=>{try{return JSON.parse(localStorage.getItem('e_emps')||'[]');}catch{return[];}};
 const setEmps=a=>localStorage.setItem('e_emps',JSON.stringify(a));
 ['bot-token','chat-owner','chat-general'].forEach(k=>localStorage.removeItem('e_'+k));
+const DEFAULT_EMPS=[{name:'Даня',pin:'3113'},{name:'Элина',pin:'7407'}];
+const SETTINGS_REFRESH_MS=6*60*60*1000;
 
 const NOW=new Date();
 const h=NOW.getHours();
@@ -586,8 +588,10 @@ let extras=[];
 let photosReceipts=[];
 let selectedDate=NOW;
 let cashOpenValue=0;
+let settingsLoading=null;
+let lastSettingsSync=0;
 
-if(!localStorage.getItem('e_emps'))setEmps([{name:'Менеджер 1',pin:'1234'},{name:'Менеджер 2',pin:'5678'}]);
+if(!localStorage.getItem('e_emps'))setEmps(DEFAULT_EMPS);
 
 
 // Локальная дата без UTC сдвига
@@ -953,6 +957,65 @@ function updatePlan(){
   if(pcCashEl) pcCashEl.innerHTML=bdg(pC);
 }
 
+function syncSettingsFromPayload(d){
+  if (!d || d.status === 'error') return;
+  if (Array.isArray(d.employees) && d.employees.length) setEmps(d.employees);
+  if (d.ownerPin) sc('owner-pin', String(d.ownerPin));
+  if (d.ownerName) sc('owner-name', String(d.ownerName));
+  if (d.hookahRate !== undefined) sc('hookah-rate', d.hookahRate);
+  if (d.cashDiffLimit !== undefined) sc('cash-diff-limit', d.cashDiffLimit);
+  if (d.maxTaxi !== undefined) sc('max-taxi', d.maxTaxi);
+  if (d.lateHour !== undefined) sc('late-hour', d.lateHour);
+  if (d.plans) {
+    const indexByCode = { 'Пн':0, 'Вт':1, 'Ср':2, 'Чт':3, 'Пт':4, 'Сб':5, 'Вс':6 };
+    Object.keys(d.plans).forEach(code => {
+      const idx = indexByCode[code];
+      if (idx === undefined) return;
+      const plan = d.plans[code] || {};
+      if (plan.revenue !== undefined) sc('plan-rev-'+idx, plan.revenue);
+      if (plan.cash !== undefined) sc('plan-cash-'+idx, plan.cash);
+    });
+  } else {
+    const idx = getDayIndex(selectedDate);
+    if (d.planRevenue !== undefined) sc('plan-rev-'+idx, d.planRevenue);
+    if (d.planCash !== undefined) sc('plan-cash-'+idx, d.planCash);
+  }
+  lastSettingsSync = Date.now();
+  localStorage.setItem('e_settings-sync-at', String(lastSettingsSync));
+}
+
+async function refreshSettings(force){
+  const sheetsUrl = gc('sheets-url');
+  if (!sheetsUrl) return null;
+  if (!force && settingsLoading) return settingsLoading;
+  if (!force && Date.now() - lastSettingsSync < 30000) return null;
+
+  settingsLoading = fetch(sheetsUrl + '?action=getInitData&date=' + localDateStr(selectedDate))
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(d => {
+      syncSettingsFromPayload(d);
+      updatePlan();
+      calc();
+      return d;
+    })
+    .catch(err => {
+      console.warn('Settings refresh failed:', err);
+      return null;
+    })
+    .finally(() => { settingsLoading = null; });
+
+  return settingsLoading;
+}
+
+refreshSettings(true);
+setInterval(()=>refreshSettings(true), SETTINGS_REFRESH_MS);
+document.addEventListener('visibilitychange', ()=>{
+  if (!document.hidden) refreshSettings(true);
+});
+
 function showForm(){
   g('fhGreeting').textContent='Привет, '+currentEmp.name+'!';
   renderDateRow();
@@ -1039,6 +1102,7 @@ async function loadLastCashOpen(){
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
     console.log('[ЭТНА] Ответ сервера:', JSON.stringify(d));
+    syncSettingsFromPayload(d);
 
     // Остаток кассы
     cashOpenValue = (d.lastCashOpen !== undefined && d.lastCashOpen !== null)
@@ -1051,16 +1115,6 @@ async function loadLastCashOpen(){
       el.textContent = '0 ₽ (первая смена)';
       el.style.color = 'var(--muted)';
     }
-
-    // Планы на день
-    if (d.planRevenue) sc('plan-rev-' + getDayIndex(selectedDate), d.planRevenue);
-    if (d.planCash)    sc('plan-cash-' + getDayIndex(selectedDate), d.planCash);
-
-    // Настройки
-    if (d.hookahRate)  sc('hookah-rate', d.hookahRate);
-    if (d.ownerPin)    sc('owner-pin', String(d.ownerPin));
-    if (d.cashDiffLimit !== undefined) sc('cash-diff-limit', d.cashDiffLimit);
-    if (d.maxTaxi !== undefined) sc('max-taxi', d.maxTaxi);
 
     updatePlan();
 
@@ -1223,8 +1277,8 @@ function renderOwnerDots(val,state){
 
 async function checkOwnerPin(){
   const entered=g('ownerPinBuf').value;
-  // Пробуем получить PIN из Apps Script / localStorage
-  const savedPin=gc('owner-pin')||'0000';
+  await refreshSettings(true);
+  const savedPin=gc('owner-pin')||'1461';
   if(entered===savedPin){
     renderOwnerDots(entered);
     setTimeout(()=>{
@@ -1242,25 +1296,14 @@ async function checkOwnerPin(){
 }
 
 async function openCfgPanel(){
-  // Если ещё не синхронизировано — грузим с сервера прямо сейчас
-  const sheetsUrl = gc('sheets-url');
-  if (sheetsUrl) {
-    try {
-      const r = await fetch(sheetsUrl + '?action=getInitData&date=' + localDateStr(new Date()));
-      const d = await r.json();
-      if (d.ownerPin)    sc('owner-pin',    String(d.ownerPin));
-      if (d.hookahRate)  sc('hookah-rate',  d.hookahRate);
-      if (d.cashDiffLimit !== undefined) sc('cash-diff-limit', d.cashDiffLimit);
-      if (d.maxTaxi !== undefined) sc('max-taxi', d.maxTaxi);
-    } catch(e) { console.warn('Settings sync failed:', e); }
-  }
+  await refreshSettings(true);
 
   g('cfgToken').value='';
   g('cfgOwner').value='';
   g('cfgGeneral').value='';
   g('cfgHookahRate').value=gc('hookah-rate')||'300';
   if(g('cfgMaxTaxi')) g('cfgMaxTaxi').value=gc('max-taxi')||'0';
-  g('cfgOwnerPin').value=gc('owner-pin')||'0000';
+  g('cfgOwnerPin').value=gc('owner-pin')||'1461';
   renderPlanGrid();
   renderEmpList();
   g('cfgModal').classList.add('show');
@@ -1268,11 +1311,12 @@ async function openCfgPanel(){
 
 function renderPlanGrid(){
   const pg=g('planGrid');
+  const codes=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
   pg.innerHTML=DAYS.map((d,i)=>`
     <div class="plan-grid">
       <span class="plan-day">${d}</span>
-      <input class="field-input" type="number" placeholder="45000" value="${gc('plan-rev-'+i)||''}" oninput="sc('plan-rev-${i}',this.value)" style="font-size:14px;padding:10px 12px">
-      <input class="field-input" type="number" placeholder="12000" value="${gc('plan-cash-'+i)||''}" oninput="sc('plan-cash-${i}',this.value)" style="font-size:14px;padding:10px 12px">
+      <input class="field-input cfg-plan-rev" data-code="${codes[i]}" type="number" placeholder="45000" value="${gc('plan-rev-'+i)||''}" oninput="sc('plan-rev-${i}',this.value)" style="font-size:14px;padding:10px 12px">
+      <input class="field-input cfg-plan-cash" data-code="${codes[i]}" type="number" placeholder="12000" value="${gc('plan-cash-'+i)||''}" oninput="sc('plan-cash-${i}',this.value)" style="font-size:14px;padding:10px 12px">
     </div>
   `).join('');
 }
@@ -1297,17 +1341,32 @@ async function saveCfg(){
   // Сохраняем локально
   sc('hookah-rate',g('cfgHookahRate').value.trim());
   if(g('cfgMaxTaxi')) sc('max-taxi',g('cfgMaxTaxi').value.trim());
-  sc('owner-pin',g('cfgOwnerPin').value.trim()||'0000');
+  sc('owner-pin',g('cfgOwnerPin').value.trim()||'1461');
+  setEmps(getEmps().filter(e=>e.name.trim()&&e.pin.trim()));
 
   // И отправляем на сервер чтобы все сотрудники получили
   const sheetsUrl = gc('sheets-url');
   if (sheetsUrl) {
     try {
+      const plans = {};
+      document.querySelectorAll('.cfg-plan-rev').forEach(input => {
+        const code = input.dataset.code;
+        plans[code] = plans[code] || {};
+        plans[code].revenue = input.value.trim();
+      });
+      document.querySelectorAll('.cfg-plan-cash').forEach(input => {
+        const code = input.dataset.code;
+        plans[code] = plans[code] || {};
+        plans[code].cash = input.value.trim();
+      });
       const payload = {
         action: 'saveSettings',
         hookahRate:  g('cfgHookahRate').value.trim(),
         maxTaxi:     g('cfgMaxTaxi') ? g('cfgMaxTaxi').value.trim() : 0,
-        ownerPin:    g('cfgOwnerPin').value.trim() || '0000'
+        ownerName:   gc('owner-name') || 'Юра',
+        ownerPin:    g('cfgOwnerPin').value.trim() || '1461',
+        employees:   getEmps(),
+        plans
       };
       const tokenValue = g('cfgToken').value.trim();
       const ownerValue = g('cfgOwner').value.trim();
