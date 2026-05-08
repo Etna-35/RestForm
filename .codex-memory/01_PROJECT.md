@@ -22,6 +22,8 @@ ETNA RestForm — мобильная веб-форма закрытия смен
 - Выбор даты через системный `input[type=date]`.
 - Автообновление настроек при старте, при возврате вкладки в фокус и раз в 6 часов.
 - Расчёт выручки, безнала, наличных, расходов, инкассации, расчётного остатка и разницы кассы.
+- Доход `Яндекс еда` учитывается как часть безнала и общей выручки.
+- Лист `Данные` заранее заполнен датами с 2026-05-01 по 2026-08-31; форма ищет строку выбранной даты и перезаписывает её.
 - Отдельный блок такси прошлой смены: такси вводится только при оплате картой; при наличной оплате значение `0`.
 - Дополнительные расходы с суммой и комментарием.
 - Загрузка фото чеков.
@@ -31,7 +33,9 @@ ETNA RestForm — мобильная веб-форма закрытия смен
 
 ## Текущая стадия
 
-MVP / beta. Форма уже развёрнута на GitHub Pages и подключена к Apps Script / Sheets / Telegram. Локальная проверка `npm run check` проходит на момент создания памяти. Перед production-нормой нужно убрать оставшийся технический долг: дублирующуюся функцию в `Code.gs`, клиентский Telegram-путь в `index.html`, публичные дефолтные PIN в коде.
+MVP / beta. Форма развёрнута на GitHub Pages и подключена к Apps Script / Sheets / Telegram. Google Drive/Sheets integration и `clasp` настроены, поэтому Codex может читать и править живую таблицу и деплоить Apps Script при доступной OAuth-сессии.
+
+Перед production-нормой нужно убрать оставшийся технический долг: публичные дефолтные PIN в коде, остатки Telegram-настроек в клиентском UI и maintenance-действия, которые не должны быть публичными.
 
 ## Ссылки
 
@@ -41,6 +45,8 @@ MVP / beta. Форма уже развёрнута на GitHub Pages и подк
 - Кастомный домен: https://no-money-no-honey.ru/
 - Google Sheets URL: https://docs.google.com/spreadsheets/d/13xJDLf_cLcYoTful-1yZiszmgbXr5AlWIQB392pEEBI/edit
 - Google Sheets ID: `13xJDLf_cLcYoTful-1yZiszmgbXr5AlWIQB392pEEBI`
-- Apps Script Web App URL: `https://script.google.com/macros/s/AKfycbwVxQsSUWPkRlTYTvpgKpA2V0zGpGTLYbJ61LhwbuE67MAYPO0boPrFX-QuKRS3dUCa6g/exec`
-- Apps Script Project ID: `<TODO: уточнить у пользователя>`
+- Apps Script Web App URL: `https://script.google.com/macros/s/AKfycbwVBqxidw_gcAlGVIwIUBU5GIfLtzQ5ULk0fJ2VRpbAWdfI0a1eT37J8ASIxuJkeF0jLw/exec`
+- Apps Script Script ID: `1msQzI7MU3ytVTXrfvXjDhbhIyz7KoOyvROAjugZmunpEyVO7EePFvPCf`
+- Apps Script deployment ID: `AKfycbwVBqxidw_gcAlGVIwIUBU5GIfLtzQ5ULk0fJ2VRpbAWdfI0a1eT37J8ASIxuJkeF0jLw`
+- Последний известный deployment: version `34`, описание `Codex enforce data sheet schema`.
 - Telegram bot name / username: `<TODO: уточнить у пользователя>`

@@ -12,7 +12,7 @@
 ═══════════════════════════════════════════════════════════════
 -->
 <script>
-window.APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwVxQsSUWPkRlTYTvpgKpA2V0zGpGTLYbJ61LhwbuE67MAYPO0boPrFX-QuKRS3dUCa6g/exec";
+window.APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwVBqxidw_gcAlGVIwIUBU5GIfLtzQ5ULk0fJ2VRpbAWdfI0a1eT37J8ASIxuJkeF0jLw/exec";
 </script>
 
 <style>
@@ -321,6 +321,10 @@ textarea.field-input{resize:none;min-height:80px;}
         <div class="crow">
           <div class="crow-label">Нетмонет</div>
           <input class="crow-input" id="netmonet" type="number" inputmode="numeric" placeholder="0" oninput="markTouched(this);calc()" data-required="true">
+        </div>
+        <div class="crow">
+          <div class="crow-label">Яндекс еда</div>
+          <input class="crow-input" id="yandexFood" type="number" inputmode="numeric" placeholder="0" oninput="markTouched(this);calc()" data-required="true">
         </div>
         <div class="crow">
           <div class="crow-label">Безналичный (итого)</div>
@@ -765,11 +769,12 @@ function validateField(el) {
   return true;
 }
 
-const REQUIRED_IDS = ['cashOpen','terminal1','terminal2','netmonet','cashRev',
+const REQUIRED_IDS = ['cashOpen','terminal1','terminal2','netmonet','yandexFood','cashRev',
   'transRev','taxiCost','washCost','hookahs','collection','cashActual'];
 const REQUIRED_LABELS = {
   cashOpen: 'Открытие кассы (факт)',
   terminal1: 'Терминал 1', terminal2: 'Терминал 2', netmonet: 'Нетмонет',
+  yandexFood: 'Яндекс еда',
   cashRev: 'Наличные', transRev: 'Переводы',
   taxiCost: 'Такси', washCost: 'Мойка', hookahs: 'Кол-во кальянов',
   collection: 'Инкассация', cashActual: 'Остаток наличных в кассе'
@@ -832,7 +837,8 @@ function calc(){
   const term1 = num('terminal1');
   const term2 = num('terminal2');
   const netmonet = num('netmonet');
-  const cardRev = term1 + term2 + netmonet;
+  const yandexFood = num('yandexFood');
+  const cardRev = term1 + term2 + netmonet + yandexFood;
   const cashRev = num('cashRev');
   const transRev = num('transRev');
   const totalRev = cardRev + cashRev + transRev;
@@ -1005,7 +1011,8 @@ function updatePlan(){
   const term1=num('terminal1')||0;
   const term2=num('terminal2')||0;
   const netmonet=num('netmonet')||0;
-  const factR=term1+term2+netmonet+num('cashRev')+num('transRev');
+  const yandexFood=num('yandexFood')||0;
+  const factR=term1+term2+netmonet+yandexFood+num('cashRev')+num('transRev');
   const factC=num('cashRev')+num('transRev');
   const pR=planR>0?Math.round(factR/planR*100):0;
   const pC=planC>0?Math.round(factC/planC*100):0;
@@ -1186,18 +1193,10 @@ async function doSubmit(){
   const btn=g('submitBtn');btn.disabled=true;
   g('sendingOverlay').classList.add('show');
 
-  // Подсчитываем количество шагов для прогресса
-  const token=gc('bot-token');
-  const chatOwner=gc('chat-owner');
-  const chatGeneral=gc('chat-general');
   const sheetsUrl=gc('sheets-url');
 
   const steps = [];
-  if (token && chatGeneral) steps.push({ key: 'short', label: 'Краткая сводка в общий чат', state: 'pending' });
-  if (token && chatOwner)   steps.push({ key: 'full',  label: 'Полный отчёт руководителю', state: 'pending' });
-  if (token && chatOwner && photosReceipts.length) steps.push({ key: 'recPh', label: `Фото чеков (${photosReceipts.length})`, state: 'pending' });
-
-  if (sheetsUrl) steps.push({ key: 'sheets', label: 'Запись в таблицу', state: 'pending' });
+  if (sheetsUrl) steps.push({ key: 'sheets', label: 'Запись в таблицу и отправка отчётов', state: 'pending' });
 
   let stepIdx = 0;
   const totalSteps = steps.length;
@@ -1220,7 +1219,8 @@ async function doSubmit(){
   const term1=num('terminal1');
   const term2=num('terminal2');
   const netmonet=num('netmonet');
-  const cardRev=term1+term2+netmonet;
+  const yandexFood=num('yandexFood');
+  const cardRev=term1+term2+netmonet+yandexFood;
   const factR=cardRev+num('cashRev')+num('transRev');
   const factC=num('cashRev')+num('transRev');
   const hookahRate=parseFloat(gc('hookah-rate'))||300;
@@ -1252,6 +1252,7 @@ async function doSubmit(){
 ${currentEmp.name}
 
 ━━━ ДОХОДЫ ━━━
+Яндекс еда: ${fmtR(yandexFood)}
 Безнал (итого): ${fmtR(cardRev)}
 Наличные: ${fmtR(num('cashRev'))}
 Переводы: ${fmtR(num('transRev'))}
@@ -1306,70 +1307,7 @@ ${planStatus(pctCash)}`;
 
   const errors=[];
 
-  // Отправить текст в TG
-  async function tgText(chatId,text){
-    try{
-      const r=await fetch(`https://api.telegram.org/bot${token}/sendMessage`,{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({chat_id:chatId,text,parse_mode:'Markdown'})
-      });
-      const j=await r.json();
-      if(!j.ok)errors.push('TG: '+j.description);
-    }catch(e){errors.push('TG: '+e.message);}
-  }
-
-  // Отправить группу фото одним сообщением (sendMediaGroup)
-  // spoiler=true — фото скрыты под спойлером (нажать чтобы показать)
-  async function tgPhotos(chatId,files,caption){
-    if(!files.length)return;
-    try{
-      const chunks=[];
-      for(let i=0;i<files.length;i+=10)chunks.push(files.slice(i,i+10));
-      for(let ci=0;ci<chunks.length;ci++){
-        const chunk=chunks[ci];
-        const fd=new FormData();
-        fd.append('chat_id',chatId);
-        const media=[];
-        chunk.forEach((f,i)=>{
-          const key='photo'+i;
-          fd.append(key,f,f.name||`photo_${i}.jpg`);
-          const item={
-            type:'photo',
-            media:'attach://'+key,
-          };
-          if(ci===0&&i===0&&caption){item.caption=caption;}
-          media.push(item);
-        });
-        fd.append('media',JSON.stringify(media));
-        const r=await fetch(`https://api.telegram.org/bot${token}/sendMediaGroup`,{method:'POST',body:fd});
-        const j=await r.json();
-        if(!Array.isArray(j)&&!j.ok)errors.push('TG фото: '+j.description);
-      }
-    }catch(e){errors.push('TG фото: '+e.message);}
-  }
-
-  if(token){
-    if(chatGeneral){
-      setStepState('short', 'active');
-      await tgText(chatGeneral,shortMsg);
-      setStepState('short', 'done');
-    }
-    if(chatOwner){
-      setStepState('full', 'active');
-      await tgText(chatOwner,fullMsg);
-      setStepState('full', 'done');
-
-      if(photosReceipts.length){
-        setStepState('recPh', 'active');
-        await tgPhotos(chatOwner,photosReceipts,'📄 Чеки терминала | '+dateStr);
-        setStepState('recPh', 'done');
-      }
-
-    }
-  }
-
-  // Google Sheets — fetch через Apps Script URL
-  // Google Sheets через Apps Script
+  // Apps Script записывает данные в Sheets и отправляет Telegram server-side.
   if (sheetsUrl) {
     setStepState('sheets', 'active');
     try {
@@ -1378,7 +1316,7 @@ ${planStatus(pctCash)}`;
         employee: currentEmp.name,
         cashOpen: num('cashOpen'),
         cashOpenCalc: cashOpenValue,
-        terminal1: term1, terminal2: term2, netmonet, cardRev,
+        terminal1: term1, terminal2: term2, netmonet, yandexFood: num('yandexFood'), cardRev,
         cashRev: num('cashRev'), transRev: num('transRev'), totalRev: factR,
         taxiCost: num('taxiCost'), washCost: num('washCost'),
         hookahs: num('hookahs'), hookahPay,
@@ -1408,8 +1346,7 @@ ${planStatus(pctCash)}`;
   show('successScreen');
 
   let sub=`Смена ${dateStr}\nСотрудник: ${currentEmp.name}`;
-  if(!token)sub+='\n\n⚙️ Telegram не настроен — зайдите в настройки.';
-  else if(!errors.length)sub+='\n\nОтправлено в Telegram и таблицу ✓';
+  if(!errors.length)sub+='\n\nОтправлено в таблицу и Telegram через сервер ✓';
   else sub+='\n\n⚠️ '+errors.join('\n');
   g('sSub').textContent=sub;
 }

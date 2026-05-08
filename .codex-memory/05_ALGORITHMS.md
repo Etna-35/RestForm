@@ -32,10 +32,24 @@ else:
 
 ## Revenue
 
+`Яндекс еда` is business revenue and is counted as cashless/card revenue.
+
 ```text
-cardRev = terminal1 + terminal2 + netmonet
+cardRev = terminal1 + terminal2 + netmonet + yandexFood
 factRevenue = cardRev + cashRev + transRev
 factCash = cashRev + transRev
+```
+
+Google Sheet mapping:
+
+```text
+G = terminal1
+H = terminal2
+I = yandexFood
+J = cardRev / Безнал итого
+K = cashRev
+L = transRev
+M = factRevenue
 ```
 
 ## Plan Percent
@@ -81,7 +95,7 @@ Server behavior:
 if taxiCost > 0:
   prevDate = selectedDate - 1 day
   find row in Данные where column A == prevDate
-  write taxiCost to column M
+  write taxiCost to column N
   if taxiCost > maxTaxi:
     mark cell red
 ```
@@ -117,6 +131,12 @@ Apps Script:
 
 ```js
 Utilities.formatDate(date, "GMT+3", "yyyy-MM-dd")
+```
+
+When saving a report, Apps Script creates `shiftDate` at local noon to avoid day rollback if spreadsheet timezone settings differ:
+
+```js
+new Date(year, month - 1, day, 12, 0, 0, 0)
 ```
 
 ## Old-Date Lock And Retro Entry
@@ -156,6 +176,8 @@ if date older than 2 days:
   otherwise return OLD_DATE_LOCKED
 ```
 
+`Code.gs` has a single server-side `isLockedPastDateServer` definition after cleanup on 2026-05-09.
+
 ## getInitData
 
 `getInitData(dateStr)` returns data needed to initialize the form:
@@ -178,7 +200,7 @@ prevDate = selectedDate - 1 day
 for rows in Данные from bottom to top:
   parse A as Date or DD.MM.YYYY string
   if parsed date == prevDate:
-    lastCashOpen = column U
+    lastCashOpen = column V / Остаток (расч.)
     break
 ```
 
@@ -186,12 +208,12 @@ for rows in Данные from bottom to top:
 
 ```text
 saveReport(data):
-  parse data.date as local date
+  parse data.date as local-noon date
   load settings and plans
   validate old-date lock
   calculate totals server-side
   ensure Данные sheet exists
-  find existing row by date
+  find existing row by date in column A
   if found: overwrite row
   else: write first empty row
   format row
@@ -200,7 +222,31 @@ saveReport(data):
   send Telegram report
 ```
 
+The current production table intentionally has date rows prefilled:
+
+```text
+row 4    = 2026-05-01
+...
+row 126  = 2026-08-31
+```
+
+This makes row identity date-based and lets missed days remain blank until the owner fills them retroactively.
+
 Current caveat: row identity is only date-based. If multiple locations or shifts per day are added later, row key must change.
+
+## Sheet Calendar Skeleton
+
+Manual helper:
+
+```text
+seedDataCalendar():
+  clear rows 4..1000, columns A:Y
+  write dates from 2026-05-01 to 2026-08-31 into A
+  write weekday code into B
+  apply ETNA body formatting and currency formats
+```
+
+The public HTTP endpoint for this helper was removed after seeding. Keep it as a manual utility unless the user asks to expose maintenance actions.
 
 ## Settings Refresh
 
@@ -228,4 +274,4 @@ Telegram messages:
 - full report to owner chat;
 - receipt photos to owner chat via media group.
 
-Current caveat: `index.html` still contains older direct Telegram send logic; cleanup should move all Telegram sending to Apps Script only.
+Current behavior: report submit no longer sends Telegram directly from the browser. Apps Script writes the sheet row and sends Telegram server-side.

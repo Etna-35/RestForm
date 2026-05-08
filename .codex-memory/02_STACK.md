@@ -26,6 +26,12 @@ Actual versions on 2026-05-08:
 - `npm run check:apps-script` — runs `node --check --input-type=commonjs < Code.gs`.
 - `npm run audit:handlers` — checks that inline HTML handlers point to defined functions.
 - `npm run check` — runs all checks above.
+- `npm run gas:login` — starts `clasp` OAuth login.
+- `npm run gas:status` — checks Apps Script sync status.
+- `npm run gas:pull` — pulls Apps Script project files.
+- `npm run gas:push` — pushes local Apps Script files.
+- `npm run gas:version` — creates Apps Script version.
+- `npm run gas:deploy` — deploys Apps Script.
 
 No external npm dependencies are currently used.
 
@@ -40,23 +46,37 @@ No external npm dependencies are currently used.
 
 ## Google Apps Script
 
-- Main file in repo: `Code.gs`
-- Web App URL in frontend: `window.APPS_SCRIPT_URL` in `index.html`
-- Current Web App URL: `https://script.google.com/macros/s/AKfycbwVxQsSUWPkRlTYTvpgKpA2V0zGpGTLYbJ61LhwbuE67MAYPO0boPrFX-QuKRS3dUCa6g/exec`
-- Script Project ID: `<TODO: уточнить у пользователя>`
+- Main repo backend file: `Code.gs`.
+- Remote Apps Script also contains Cyrillic file `Код.js`; keep it synchronized with `Code.gs` because the bound project previously had both files and duplicate entrypoints can shadow each other.
+- Manifest: `appsscript.json`.
+- `clasp` config: `.clasp.json`.
+- Push allowlist: `.claspignore` includes only `Code.gs`, `Код.js`, `appsscript.json`.
+- Web App URL in frontend: `window.APPS_SCRIPT_URL` in `index.html`.
+- Current Web App URL: `https://script.google.com/macros/s/AKfycbwVBqxidw_gcAlGVIwIUBU5GIfLtzQ5ULk0fJ2VRpbAWdfI0a1eT37J8ASIxuJkeF0jLw/exec`
+- Script ID: `1msQzI7MU3ytVTXrfvXjDhbhIyz7KoOyvROAjugZmunpEyVO7EePFvPCf`
+- Deployment ID: `AKfycbwVBqxidw_gcAlGVIwIUBU5GIfLtzQ5ULk0fJ2VRpbAWdfI0a1eT37J8ASIxuJkeF0jLw`
+- Last known deployed version: `34`.
 - Web app deployment:
-  - Execute as: owner
-  - Access: anyone with link
-  - Timezone: Moscow / `GMT+3` logic in code
+  - Execute as: owner / deploying user.
+  - Access: anyone with link.
+  - Timezone: `Europe/Moscow`; code also uses `GMT+3` for business dates.
 - Triggers:
   - HTTP `doGet(e)`
   - HTTP `doPost(e)`
   - No time-driven trigger currently required.
-- Manual utility:
+- Manual utilities:
   - `fixDatesInColumnA()`
   - `setupDefaultSettings()`
+- `seedDataCalendar()` — manual utility used to reset `Данные` and fill date rows from 2026-05-01 to 2026-08-31. It is not exposed as public HTTP action after deployment version 32.
 
-Important deployment rule: after any `Code.gs` change, user creates a new Apps Script deployment and sends the new URL; Codex then updates `window.APPS_SCRIPT_URL`.
+Apps Script deployment rule:
+
+1. Run `npm run check`.
+2. Copy backend changes to both `Code.gs` and `Код.js`.
+3. Run `npm run gas:push`.
+4. Create a version with `npx @google/clasp version "description"`.
+5. Deploy to the existing deployment ID with `npx @google/clasp deploy -i AKfycbwVBqxidw_gcAlGVIwIUBU5GIfLtzQ5ULk0fJ2VRpbAWdfI0a1eT37J8ASIxuJkeF0jLw -V <version>`.
+6. Verify the Web App URL still responds.
 
 ## Google Sheets
 
@@ -69,11 +89,11 @@ Live spreadsheet:
   - `Дашборд`
   - `Настройки`
 
-`Code.gs` uses `SpreadsheetApp.getActiveSpreadsheet()`, so Apps Script must be bound to the correct spreadsheet.
+`Code.gs` uses `SpreadsheetApp.getActiveSpreadsheet()`, so Apps Script must remain bound to the correct spreadsheet.
 
 ### Sheet `Данные`
 
-24 columns:
+Canonical schema is 25 columns, A:Y:
 
 | Column | Field |
 |---|---|
@@ -85,22 +105,31 @@ Live spreadsheet:
 | F | Откр. Δ |
 | G | Терминал 1 |
 | H | Терминал 2 |
-| I | Безнал итого |
-| J | Наличные |
-| K | Переводы |
-| L | Выручка итого |
-| M | Такси |
-| N | Мойка |
-| O | Кальяны (шт) |
-| P | Выпл. кальяны |
-| Q | Доп. расходы |
-| R | Инкассация |
-| S | Остаток (факт) |
-| T | Переводы (ref) |
-| U | Остаток (расч.) |
-| V | Разница |
-| W | План выручки |
-| X | % выполнения |
+| I | Яндекс еда |
+| J | Безнал итого |
+| K | Наличные |
+| L | Переводы |
+| M | Выручка итого |
+| N | Такси |
+| O | Мойка |
+| P | Кальяны (шт) |
+| Q | Выпл. кальяны |
+| R | Доп. расходы |
+| S | Инкассация |
+| T | Остаток (факт) |
+| U | Переводы (ref) |
+| V | Остаток (расч.) |
+| W | Разница |
+| X | План выручки |
+| Y | % выполнения |
+
+Current live data skeleton:
+
+- Rows 4..126 contain dates from 2026-05-01 through 2026-08-31.
+- Column A contains real date values, not text.
+- Column B contains weekday codes (`Пн`, `Вт`, etc.).
+- Report submission should update the row matching the selected date; if no row exists, it may fall back to the first empty row.
+- `ensureDataSheet()` enforces canonical A:Y schema and removes columns after Y on `Данные`.
 
 ### Sheet `Настройки`
 
@@ -110,7 +139,8 @@ Live spreadsheet:
 - Row 15, D: late hour.
 - Row 16, C/D: owner name / owner PIN.
 - Row 20, D: max taxi.
-- Rows 23-53, A:C: employees list (`№`, `Сотрудник`, `PIN`).
+- Row 23, A:C: employees header (`№`, `Сотрудник`, `PIN`).
+- Rows 24-53, A:C: employees list.
 - Telegram fallback may still read rows 17-19, but target storage is Script Properties.
 
 ## Telegram Bot API

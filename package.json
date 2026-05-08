@@ -8,6 +8,12 @@
     "check": "npm run check:syntax && npm run check:apps-script && npm run audit:handlers",
     "check:syntax": "node scripts/check-inline-js.mjs",
     "check:apps-script": "node --check --input-type=commonjs < Code.gs",
-    "audit:handlers": "node scripts/audit-inline-handlers.mjs"
+    "audit:handlers": "node scripts/audit-inline-handlers.mjs",
+    "gas:login": "npx @google/clasp login --no-localhost",
+    "gas:status": "npx @google/clasp status",
+    "gas:pull": "npx @google/clasp pull",
+    "gas:push": "npx @google/clasp push",
+    "gas:version": "npx @google/clasp version",
+    "gas:deploy": "npx @google/clasp deploy"
   }
 }
