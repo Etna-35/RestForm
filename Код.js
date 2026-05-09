@@ -1050,3 +1050,13 @@ function fixDatesInColumnA() {
   dateRange.setNumberFormat('DD.MM.YYYY');
   SpreadsheetApp.getUi().alert('Готово! Время убрано из ' + (lastRow - 3) + ' строк.');
 }
+
+// Разовый запуск в редакторе Apps Script владельцем проекта.
+// Нужен, чтобы Google выдал разрешение script.external_request для Telegram запросов.
+function authorizeExternalRequest() {
+  const response = UrlFetchApp.fetch('https://api.telegram.org');
+  return {
+    status: 'ok',
+    code: response.getResponseCode()
+  };
+}
