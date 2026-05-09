@@ -629,7 +629,7 @@ function getWeekTrend(shiftDate, currentRevenue, currentCashForPlan) {
 function getCashStatusLine(cashDiff) {
   const diff = Number(cashDiff) || 0;
   if (diff === 0) return '✅ Касса сдана идеально';
-  const icon = Math.abs(diff) <= 999 ? '🤔' : '⚠️';
+  const icon = diff > 0 ? '🤔' : '⚠️';
   const kind = diff > 0 ? 'излишком' : 'недосдачей';
   return icon + ' Касса сдана с ' + kind + ' в ' + money(Math.abs(diff));
 }
