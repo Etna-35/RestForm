@@ -444,55 +444,48 @@ function sendTelegramReport(data, ctx) {
   const dateStr = Utilities.formatDate(ctx.shiftDate, 'GMT+3', 'dd.MM.yyyy') + ' (' + String(ctx.dayCode).toLowerCase() + ')';
   const pctRev = ctx.planRevenue > 0 ? Math.round(ctx.totalRev / ctx.planRevenue * 100) : 0;
   const pctCash = ctx.planCash > 0 ? Math.round((ctx.cashRev + ctx.transRev) / ctx.planCash * 100) : 0;
-  const icon = pctRev >= 100 ? '🟢' : pctRev >= 80 ? '🟡' : '🔴';
+  const avgPct = Math.round((pctRev + pctCash) / 2);
+  const icon = getShiftIcon(avgPct);
   const employee = escapeTelegramText(data.employee || '');
   const photos = Array.isArray(data.photos) ? data.photos : [];
+  const changeAmount = Number(data.changeAmount) || 0;
+  const cashFactForPlan = ctx.cashRev + ctx.transRev;
+  const trend = getWeekTrend(ctx.shiftDate, ctx.totalRev, cashFactForPlan);
 
   const extraLines = parseExtras(data.extras)
-    .map(ex => '  • ' + rub(ex.amount) + (ex.comment ? ' — ' + escapeTelegramText(ex.comment) : ''))
+    .map(ex => '• ' + money(ex.amount) + (ex.comment ? ' — ' + escapeTelegramText(ex.comment) : ''))
     .join('\n');
 
-  const cashDiffLine = ctx.cashDiff === 0
-    ? '✅ Касса сходится'
-    : ctx.cashDiff > 0
-      ? '⚠️ Излишек: ' + rub(ctx.cashDiff)
-      : '❌ Недостача: ' + rub(Math.abs(ctx.cashDiff));
+  const cashStatusLine = getCashStatusLine(ctx.cashDiff);
 
-  const shortMsg = icon + ' *ЭТНА | Итоги смены* | ' + dateStr + '\n' +
-    employee + '\n\n' +
-    '━━━ ПЛАН ПО ВЫРУЧКЕ ━━━\n' +
-    planBar(pctRev) + ' ' + pctRev + '%\n' +
-    'Факт: *' + rub(ctx.totalRev) + '*\n' +
-    'План: ' + rub(ctx.planRevenue) + '\n' +
-    planStatus(pctRev) + '\n\n' +
-    '━━━ ПЛАН ПО НАЛИЧНЫМ ━━━\n' +
-    planBar(pctCash) + ' ' + pctCash + '%\n' +
-    'Факт: *' + rub(ctx.cashRev + ctx.transRev) + '*\n' +
-    'План: ' + rub(ctx.planCash) + '\n' +
-    planStatus(pctCash);
+  const shortMsg = '*`Показатели смены : ' + icon + '`*\n\n' +
+    '*`Выручка:`*\n' +
+    planBar(pctRev) + '  ' + pctRev + '% ' + trend.revArrow + '\n' +
+    '_' + money(ctx.totalRev) + ' из ' + money(ctx.planRevenue) + '_\n\n' +
+    '*`Наличные:`*\n' +
+    planBar(pctCash) + '  ' + pctCash + '% ' + trend.cashArrow + '\n' +
+    '_' + money(cashFactForPlan) + ' из ' + money(ctx.planCash) + '_';
 
-  const fullMsg = '*ЭТНА  |  ' + dateStr + '*\n' +
+  const fullMsg = dateStr + '\n' +
     employee + '\n\n' +
-    '━━━ ДОХОДЫ ━━━\n' +
-    'Яндекс еда: ' + rub(ctx.yandexFood) + '\n' +
-    'Безнал (итого): ' + rub(ctx.cardRev) + '\n' +
-    'Наличные: ' + rub(ctx.cashRev) + '\n' +
-    'Переводы: ' + rub(ctx.transRev) + '\n\n' +
-    '*Итого выручка: ' + rub(ctx.totalRev) + '*\n\n' +
-    '━━━ РАСХОДЫ (прошлой смены) ━━━\n' +
-    'Такси (прош. смена): ' + rub(ctx.taxiCost) + (ctx.taxiAnomaly ? ' ⚠️ ПРЕВЫШЕН ЛИМИТ' : '') + '\n' +
-    'Мойка: ' + rub(ctx.washCost) + '\n' +
-    'Кальянов: ' + ctx.hookahs + ' × ' + ctx.params.hookahRate + '₽ = ' + rub(ctx.hookahPay) +
-    (extraLines ? '\nДоп. расходы:\n' + extraLines : '') + '\n\n' +
-    '*Итого расходов: ' + rub(Number(data.totalExp) || (ctx.taxiCost + ctx.washCost + ctx.hookahPay + ctx.extrasTotal)) + '*\n\n' +
-    '━━━ КАССА ━━━\n' +
-    'Инкассация: ' + rub(ctx.collection) + '\n' +
-    'Факт: ' + rub(ctx.cashActual) + '\n' +
-    'Расчёт: ' + rub(ctx.cashCalc) + '\n' +
-    cashDiffLine + '\n\n' +
-    '━━━ ПЛАН ━━━\n' +
-    icon + ' Выручка: ' + rub(ctx.totalRev) + ' / ' + rub(ctx.planRevenue) + ' (' + pctRev + '%)\n' +
-    (pctCash >= 100 ? '✅' : '❌') + ' Наличные: ' + rub(ctx.cashRev + ctx.transRev) + ' / ' + rub(ctx.planCash);
+    'ДОХОДЫ\n\n' +
+    'Безнал: ' + money(ctx.cardRev) + '\n' +
+    'Наличные: ' + money(ctx.cashRev) + '\n' +
+    'Переводы: ' + money(ctx.transRev) + '\n' +
+    'Итого выручка: ' + money(ctx.totalRev) + '\n\n' +
+    'РАСХОДЫ\n\n' +
+    'Мойка: ' + money(ctx.washCost) + '\n' +
+    'Кальяны: ' + ctx.hookahs + ' × ' + ctx.params.hookahRate + ' = ' + money(ctx.hookahPay) + '\n\n' +
+    (extraLines ? 'Доп. расходы:\n' + extraLines + '\n\n' : '') +
+    'Итого расходов: ' + money(Number(data.totalExp) || (ctx.taxiCost + ctx.washCost + ctx.hookahPay + ctx.extrasTotal)) + '\n\n' +
+    'КАССА\n\n' +
+    'Инкассация: ' + money(ctx.collection) + '\n' +
+    'Остаток в кассе: ' + money(ctx.cashActual) + '\n' +
+    (changeAmount > 0 ? '*в том числе мелочью: ' + money(changeAmount) + '*\n' : '') +
+    cashStatusLine + '\n\n' +
+    'ПЛАН\n' +
+    'Выручка: ' + money(ctx.totalRev) + ' / ' + money(ctx.planRevenue) + ' (' + pctRev + '%)\n' +
+    'Наличные: ' + money(cashFactForPlan) + ' / ' + money(ctx.planCash) + ' (' + pctCash + '%)';
 
   if (chatGeneral) {
     const sent = telegramText(token, chatGeneral, shortMsg);
@@ -572,6 +565,10 @@ function parseExtras(raw) {
   }
 }
 
+function money(value) {
+  return (Number(value) || 0).toLocaleString('ru-RU');
+}
+
 function rub(value) {
   return (Number(value) || 0).toLocaleString('ru-RU') + ' ₽';
 }
@@ -586,6 +583,55 @@ function planStatus(pct) {
   if (pct >= 100) return '✅ Выполнен';
   if (pct >= 80) return '🟡 Близко';
   return '🔴 Не выполнен';
+}
+
+function getShiftIcon(avgPct) {
+  if (avgPct < 60) return '🔴';
+  if (avgPct <= 89) return '⚠️';
+  if (avgPct <= 99) return '☑️';
+  if (avgPct <= 110) return '✅';
+  if (avgPct <= 150) return '🔥';
+  return '☠️';
+}
+
+function getTrendArrow(diff) {
+  if (Math.abs(diff) <= 999) return '⏹︎';
+  return diff > 0 ? '⬆︎' : '⬇︎';
+}
+
+function getWeekTrend(shiftDate, currentRevenue, currentCashForPlan) {
+  const ss = getSpreadsheet();
+  const sheet = ss.getSheetByName('Данные');
+  if (!sheet || sheet.getLastRow() < 4) return { revArrow: '⏹︎', cashArrow: '⏹︎' };
+
+  const prevWeek = new Date(shiftDate.getFullYear(), shiftDate.getMonth(), shiftDate.getDate() - 7, 12, 0, 0, 0);
+  const prevWeekStr = Utilities.formatDate(prevWeek, 'GMT+3', 'yyyy-MM-dd');
+  const lastRow = sheet.getLastRow();
+  const values = sheet.getRange(4, 1, lastRow - 3, 13).getValues(); // A:M
+
+  for (let i = 0; i < values.length; i++) {
+    const rawDate = values[i][0];
+    if (!(rawDate instanceof Date)) continue;
+    const rowDateStr = Utilities.formatDate(rawDate, 'GMT+3', 'yyyy-MM-dd');
+    if (rowDateStr !== prevWeekStr) continue;
+
+    const prevRev = Number(values[i][12]) || 0; // M
+    const prevCashForPlan = (Number(values[i][10]) || 0) + (Number(values[i][11]) || 0); // K + L
+    return {
+      revArrow: getTrendArrow(Number(currentRevenue) - prevRev),
+      cashArrow: getTrendArrow(Number(currentCashForPlan) - prevCashForPlan)
+    };
+  }
+
+  return { revArrow: '⏹︎', cashArrow: '⏹︎' };
+}
+
+function getCashStatusLine(cashDiff) {
+  const diff = Number(cashDiff) || 0;
+  if (diff === 0) return '✅ Касса сдана идеально';
+  const icon = Math.abs(diff) <= 999 ? '🤔' : '⚠️';
+  const kind = diff > 0 ? 'излишком' : 'недосдачей';
+  return icon + ' Касса сдана с ' + kind + ' в ' + money(Math.abs(diff));
 }
 
 function escapeTelegramText(value) {
