@@ -347,19 +347,9 @@ function saveReport(data) {
 
     sheet.getRange(targetRow, 1, 1, 25).setValues([rowValues]);
 
-    // Форматирование
-    const bg = targetRow % 2 === 0 ? '#FFFFFF' : '#F5F5F5';
-    sheet.getRange(targetRow, 1, 1, 25)
-      .setBackground(bg).setFontSize(10).setVerticalAlignment('middle');
-    sheet.getRange(targetRow, 1).setNumberFormat('DD.MM.YYYY');
-    sheet.getRange(targetRow, 2).setNumberFormat('@').setHorizontalAlignment('center');
-    sheet.getRange(targetRow, 16).setNumberFormat('0').setHorizontalAlignment('center');
-    sheet.getRange(targetRow, 25).setNumberFormat('0%').setHorizontalAlignment('right');
-
-    const MONEY = '0';
-    [4,5,6,7,8,9,10,11,12,13,14,15,17,18,19,20,21,22,23,24]
-      .forEach(c => sheet.getRange(targetRow, c)
-        .setNumberFormat(MONEY).setHorizontalAlignment('right'));
+    // Важно: не перезатираем фирменный стиль строки.
+    // Таблица заранее предформатирована, и вручную заданные пользователем
+    // визуальные правила (группы, цвета выходных, разделители) должны сохраняться.
 
     // Цвет разницы
     const diffCell = sheet.getRange(targetRow, 23);
@@ -446,25 +436,25 @@ function sendTelegramReport(data, ctx) {
   const pctCash = ctx.planCash > 0 ? Math.round((ctx.cashRev + ctx.transRev) / ctx.planCash * 100) : 0;
   const avgPct = Math.round((pctRev + pctCash) / 2);
   const icon = getShiftIcon(avgPct);
-  const employee = escapeTelegramText(data.employee || '');
+  const employee = escapeHtml(data.employee || '');
   const photos = Array.isArray(data.photos) ? data.photos : [];
   const changeAmount = Number(data.changeAmount) || 0;
   const cashFactForPlan = ctx.cashRev + ctx.transRev;
   const trend = getWeekTrend(ctx.shiftDate, ctx.totalRev, cashFactForPlan);
 
   const extraLines = parseExtras(data.extras)
-    .map(ex => '• ' + money(ex.amount) + (ex.comment ? ' — ' + escapeTelegramText(ex.comment) : ''))
+    .map(ex => '• ' + money(ex.amount) + (ex.comment ? ' — ' + escapeHtml(ex.comment) : ''))
     .join('\n');
 
   const cashStatusLine = getCashStatusLine(ctx.cashDiff);
 
-  const shortMsg = '*`Показатели смены : ' + icon + '`*\n\n' +
-    '*`Выручка:`*\n' +
+  const shortMsg = '<b><code>Показатели смены : ' + icon + '</code></b>\n\n' +
+    '<b><code>Выручка:</code></b>\n' +
     planBar(pctRev) + '  ' + pctRev + '% ' + trend.revArrow + '\n' +
-    '_' + money(ctx.totalRev) + ' из ' + money(ctx.planRevenue) + '_\n\n' +
-    '*`Наличные:`*\n' +
+    '<i>' + money(ctx.totalRev) + ' из ' + money(ctx.planRevenue) + '</i>\n\n' +
+    '<b><code>Наличные:</code></b>\n' +
     planBar(pctCash) + '  ' + pctCash + '% ' + trend.cashArrow + '\n' +
-    '_' + money(cashFactForPlan) + ' из ' + money(ctx.planCash) + '_';
+    '<i>' + money(cashFactForPlan) + ' из ' + money(ctx.planCash) + '</i>';
 
   const fullMsg = dateStr + '\n' +
     employee + '\n\n' +
@@ -481,7 +471,7 @@ function sendTelegramReport(data, ctx) {
     'КАССА\n\n' +
     'Инкассация: ' + money(ctx.collection) + '\n' +
     'Остаток в кассе: ' + money(ctx.cashActual) + '\n' +
-    (changeAmount > 0 ? '*в том числе мелочью: ' + money(changeAmount) + '*\n' : '') +
+    (changeAmount > 0 ? '<i>в том числе мелочью: ' + money(changeAmount) + '</i>\n' : '') +
     cashStatusLine + '\n\n' +
     'ПЛАН\n' +
     'Выручка: ' + money(ctx.totalRev) + ' / ' + money(ctx.planRevenue) + ' (' + pctRev + '%)\n' +
@@ -509,7 +499,7 @@ function telegramText(token, chatId, text) {
     const response = UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
       method: 'post',
       contentType: 'application/json',
-      payload: JSON.stringify({ chat_id: chatId, text: text, parse_mode: 'Markdown' }),
+      payload: JSON.stringify({ chat_id: chatId, text: text, parse_mode: 'HTML' }),
       muteHttpExceptions: true
     });
     const body = JSON.parse(response.getContentText() || '{}');
@@ -636,6 +626,13 @@ function getCashStatusLine(cashDiff) {
 
 function escapeTelegramText(value) {
   return String(value || '').replace(/([_*`\[])/g, '\\$1');
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 // ═══════════════════════════════════════════════════
